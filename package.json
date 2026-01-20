@@ -1,0 +1,37 @@
+{
+  "name": "pure-swipe-slider",
+  "version": "1.0.0",
+  "description": "A tiny, zero-dependency swipe slider web component (< 4 KB gzipped).",
+  "main": "swipe-slider.js",
+  "module": "swipe-slider.js",
+  "files": [
+    "swipe-slider.js",
+    "swipe3.js",
+    "swipe-slider.css",
+    "register.js",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexstep/swipe-slider.git"
+  },
+  "keywords": [
+    "web-component",
+    "swipe",
+    "slider",
+    "carousel",
+    "touch",
+    "mobile-first",
+    "pointer-events"
+  ],
+  "author": "alexstep",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alexstep/swipe-slider/issues"
+  },
+  "homepage": "https://github.com/alexstep/swipe-slider#readme"
+}

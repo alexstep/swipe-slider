@@ -1,27 +1,46 @@
-# Swipe Slider Web Component
+# Pure Swipe Slider Web Component
+
+[![Bundle Size](https://img.shields.io/badge/gzipped_size-%3C_4_KB-blue)](https://github.com/alexstep/swipe-slider)
+[![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](https://github.com/alexstep/swipe-slider)
+[![License](https://img.shields.io/badge/license-MIT-yellow)](./LICENSE)
+[![NPM Version](https://img.shields.io/npm/v/pure-swipe-slider)](https://www.npmjs.com/package/pure-swipe-slider)
 
 [**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
 
-**Zero-dependencies, framework agnostic vanilla JavaScript & CSS (< 4KB gzipped)**. A lightweight, universal web component wrapper for `swipe.js`, based on [Swipe](https://github.com/thebird/Swipe/) with modern optimizations for mobile performance. Designed for seamless integration into any web project with support for custom events and a declarative API. Just drop it into your project and start using it immediately.
+A tiny, zero-dependency swipe slider as a Web Component (< 4 KB gzipped).
+Framework-agnostic, mobile-first, event-driven.
+
+Built on top of Swipe.js with modernized internals, Pointer Events, GPU-accelerated transforms, and a clean Custom Events interface.
+
+## Two ways to use
+
+- `<swipe-slider>` — Web Component for 99% of cases
+- `swipe3.js` — low-level engine for advanced / legacy layouts
 
 ## Features
 
-- **Declarative**: Use as a standard HTML tag `<swipe-slider>`.
-- **Event-driven**: All `swipe.js` callbacks are available as standard Custom Events.
-- **Flexible**: Supports images, dates, complex layouts, and dynamic slide loading.
-- **Mobile-friendly**: Optimized for touch interaction with support for iOS-specific tweaks.
-- **Proxy Methods**: Access internal `swipe.js` methods directly on the element.
-- **GPU-accelerated**: Uses `translate3d` and `will-change` for smooth 60fps animations.
-- **Pointer Events**: Modern unified input handling (touch/mouse/pen).
+- **Full API access**: call `next()`, `prev()`, `slide()` directly on the element
+- **Unified input handling**: touch, mouse, wheel, pen via Pointer Events
+- **Mobile-optimized**: smooth 60fps animations with iOS overscroll handling
+- **Framework-ready**: standard HTML tag with Custom Events
+- **Flexible content**: images, dates, complex layouts, and dynamic slides
+- **Performance-first**: GPU acceleration and modern optimizations
+- **No build step**: works directly in modern browsers
 
 ## Installation
+
+### From NPM
+
+```bash
+npm install pure-swipe-slider
+```
 
 ### Quick Start
 
 Simply import the component with default tag registration:
 
 ```javascript
-import './register.js';
+import 'pure-swipe-slider/register.js';
 ```
 
 ### Custom Tag Registration
@@ -29,7 +48,7 @@ import './register.js';
 Import the class separately to register with your own tag name:
 
 ```javascript
-import SwipeSlider from './swipe-slider.js';
+import SwipeSlider from 'pure-swipe-slider';
 
 // Register with custom tag name
 customElements.define('my-slider', SwipeSlider);
@@ -96,6 +115,8 @@ slider.addEventListener('swipe:change', (e) => {
 
 ### Attributes
 
+Boolean attributes follow HTML semantics: presence = `true`, absence = `false`.
+
 | Attribute | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `start-slide` | Number | `0` | Initial slide index. |
@@ -106,9 +127,11 @@ slider.addEventListener('swipe:change', (e) => {
 | `stop-propagation` | Boolean | `false` | Stop event propagation. |
 | `passive-events` | Boolean | `false` | Use passive event listeners (may improve performance but breaks preventDefault). |
 | `loop` | Boolean | `false` | Enable infinite circular loop (moves slides dynamically). |
-| `auto-height` | Number | `none` | Enable automatic height adjustment. Optional value sets min-height. |
+| `auto-height` | Boolean \| Number | `false` | Enable automatic height adjustment. Optional value sets min-height. |
 
 ### Events
+
+All events are dispatched as CustomEvent with `{ bubbles: true, composed: true }`.
 
 | Event | Detail | Description |
 |-------|--------|-------------|
@@ -116,7 +139,7 @@ slider.addEventListener('swipe:change', (e) => {
 | `swipe:transition-end` | `{ index, element }` | Fired when the transition finishes. |
 | `swipe:drag-start` | `{ index, element }` | Fired when dragging starts. |
 | `swipe:drag-end` | `{ index, element }` | Fired when dragging ends. |
-| `swipe:move` | `none` | Fired during movement. |
+| `swipe:move` | `none` | Fired during movement (high-frequency event, use sparingly). |
 
 ### Methods
 
@@ -285,6 +308,13 @@ swipe-slider {
 }
 ```
 
+## When this is not a good fit
+
+- If you need virtualized slides (1000+ items)
+- If you rely heavily on React/Vue-specific lifecycles
+- If you need autoplay / pagination / thumbnails out of the box
+- If you need complex state management or data binding
+
 ## License
 
 MIT
@@ -301,7 +331,7 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 | Passive event listeners | Non-blocking touch listeners where possible (via `passive-events` attr) |
 | Reduced layout thrashing | Batched DOM reads/writes to minimize reflows |
 | Modern ES6+ syntax | Latest JavaScript features for better performance and maintainability |
-| Size (Gzipped) | ~3.8 KB for the entire component (JS + CSS) |
+| Size (Gzipped) | < 4 KB for the entire component (JS + CSS) |
 
 ## Size
 

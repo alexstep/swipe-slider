@@ -14,12 +14,35 @@
 
 
   <style>
+    :root {
+      color-scheme: dark light;
+      --bg-primary: light-dark(#ffffff, #0a0a0a);
+      --bg-secondary: light-dark(#f5f5f5, #1a1a1a);
+      --bg-tertiary: light-dark(#ebebeb, #2a2a2a);
+      --text-primary: light-dark(#1a1a1a, #ffffff);
+      --text-secondary: light-dark(#666666, #b0b0b0);
+      --accent-primary: #00d4ff;
+      --accent-secondary: #8b5cf6;
+      --accent-tertiary: #ec4899;
+      --border-color: light-dark(#dddddd, #333333);
+      --shadow-color: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+      --glass-bg: light-dark(color-mix(in srgb, black 5%, transparent), color-mix(in srgb, white 5%, transparent));
+      --glass-border: light-dark(color-mix(in srgb, black 10%, transparent), color-mix(in srgb, white 10%, transparent));
+    }
+
+    @property --accent-primary {
+      syntax: '<color>';
+      inherits: true;
+      initial-value: #00d4ff;
+    }
+
     * {
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
       -webkit-touch-callout: none;
       user-select: none;
     }
+
     textarea,
     input[type="text"],
     input[type="password"],
@@ -27,57 +50,28 @@
     input[type="number"] {
       user-select: text;
     }
-    /* Disable drag content */
+
     *,
     *::after,
     *::before {
       -webkit-user-drag: none;
       -webkit-app-region: no-drag;
     }
-    input:-webkit-autofill,
-    input:-webkit-autofill:focus {
-      transition:
-        background-color 600000s 0s,
-        color 600000s 0s;
-    }
-    input[data-autocompleted] {
-      background-color: transparent !important;
-    }
+
     img {
       text-indent: -10000px;
-      background: rgba(255, 255, 255, 0.1);
+      background: color-mix(in srgb, white 10%, transparent);
       position: relative;
       overflow: hidden;
     }
+
     img[alt]:after {
       display: block;
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      inset: 0;
       background-color: var(--bg-color);
       text-align: center;
       content: " ";
-    }
-
-    :root {
-      --bg-primary: #0a0a0a;
-      --bg-secondary: #1a1a1a;
-      --bg-tertiary: #2a2a2a;
-      --text-primary: #ffffff;
-      --text-secondary: #b0b0b0;
-      --accent-primary: #00d4ff;
-      --accent-secondary: #8b5cf6;
-      --accent-tertiary: #ec4899;
-      --border-color: #333333;
-      --shadow-color: rgba(0, 212, 255, 0.1);
-      --glass-bg: rgba(255, 255, 255, 0.05);
-      --glass-border: rgba(255, 255, 255, 0.1);
-    }
-
-    * {
-      box-sizing: border-box;
     }
 
     body {
@@ -85,13 +79,11 @@
       line-height: 1.4;
       color: var(--text-primary);
       margin: 0;
-      padding: 0;
       background: var(--bg-primary);
       min-height: 100vh;
       overflow-x: hidden;
     }
 
-    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
     }
@@ -105,16 +97,12 @@
       border-radius: 3px;
     }
 
-
-    /* Main container */
     .box {
       position: relative;
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 10px;
+      background: color-mix(in srgb, white 3%, transparent);
+      border-radius: 12px;
       overflow: hidden;
-      border: none;
-      border-top: 1px solid rgba(255, 255, 255, 0.01);
-      box-shadow: none;
+      border-top: 1px solid color-mix(in srgb, white 1%, transparent);
     }
 
     .demo-container {
@@ -124,11 +112,9 @@
       min-height: calc(100vh - 120px);
     }
 
-    /* Control panel */
     .control-panel {
       padding: 25px;
       margin-bottom: 30px;
-      backdrop-filter: blur(20px);
     }
 
     .control-panel::before {
@@ -160,10 +146,6 @@
       margin-bottom: 20px;
     }
 
-    .control-group:last-child {
-      margin-bottom: 0;
-    }
-
     .control-label {
       display: block;
       font-size: 0.9rem;
@@ -174,7 +156,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* Toggle switches - using base.css styles */
     .toggle-container {
       display: flex;
       gap: 0;
@@ -192,19 +173,15 @@
       position: relative;
       vertical-align: middle;
       transition: background 0.25s;
-      border-top: 1px solid rgba(0, 0, 0, 0.5);
-    }
-
-    input[type="checkbox"].toggle:before,
-    input[type="checkbox"].toggle:after {
-      content: "";
+      border-top: 1px solid color-mix(in srgb, black 50%, transparent);
     }
 
     input[type="checkbox"].toggle:before {
+      content: "";
       display: block;
       background: #fefefe;
       filter: saturate(2);
-      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 0 color-mix(in srgb, black 8%, transparent);
       border-radius: 50%;
       height: calc(100% - 4px);
       aspect-ratio: 1;
@@ -234,7 +211,6 @@
       margin-bottom: 12px;
     }
 
-    /* Slider controls */
     .slider-controls {
       display: flex;
       gap: 10px;
@@ -252,7 +228,7 @@
       font-size: 0.9rem;
       font-weight: 500;
       transition: all 0.3s ease;
-      backdrop-filter: blur(10px);
+      backdrop-filter: blur(8px);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
@@ -263,11 +239,6 @@
       transform: translateY(-1px);
     }
 
-    .control-btn:active {
-      transform: translateY(0);
-    }
-
-    /* Slider container */
     .slider-section {
       margin-bottom: 30px;
       position: relative;
@@ -284,16 +255,15 @@
     }
 
     .slider-section h2::before {
-      content: '🎯';
-      font-size: 1.5rem;
+      content: '📲';
+      font-size: 2rem;
     }
 
-    /* Custom slider styling */
     swipe-slider {
-      backdrop-filter: blur(20px);
+      overflow: hidden;
+      height: 260px;
     }
 
-    /* Slide styling */
     .demo-slide {
       display: flex;
       flex-direction: column;
@@ -307,11 +277,8 @@
     .demo-slide::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+      inset: 0;
+      background: linear-gradient(135deg, color-mix(in srgb, var(--accent-primary) 10%, transparent), color-mix(in srgb, var(--accent-secondary) 10%, transparent));
       opacity: 0;
       transition: opacity 0.5s ease;
     }
@@ -325,7 +292,7 @@
       font-weight: 900;
       color: var(--text-primary);
       margin-bottom: 10px;
-      text-shadow: 0 0 30px var(--accent-primary);
+      text-shadow: 0 0 20px color-mix(in srgb, var(--accent-primary) 50%, transparent);
       z-index: 1;
     }
 
@@ -348,7 +315,6 @@
       line-height: 1.5;
     }
 
-    /* Status indicator */
     .status-indicator {
       position: absolute;
       top: 5px;
@@ -357,18 +323,16 @@
       border: 1px solid var(--glass-border);
       border-radius: 12px;
       padding: 10px 15px;
-      backdrop-filter: blur(20px);
+      backdrop-filter: blur(12px);
       font-size: 0.8rem;
       color: var(--text-secondary);
       z-index: 1000;
     }
 
-    /* Footer */
     .demo-footer {
       border-top: 1px solid var(--border-color);
       padding: 20px;
       text-align: center;
-      backdrop-filter: blur(10px);
     }
 
     .footer-link {
@@ -388,17 +352,14 @@
 
     .footer-link::before {
       content: '🐙';
-      font-size: 1rem;
     }
 
-    /* Calendar styles */
     .calendar-slide {
       display: flex;
       flex-direction: column;
       min-height: 320px;
       padding: 20px;
       position: relative;
-      overflow: hidden;
     }
 
     .calendar-header {
@@ -444,11 +405,11 @@
       border-radius: 8px;
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
-      transition: all 0.3s ease;
+      transition: all 0.2s ease;
       cursor: pointer;
     }
 
-    .calendar-day:hover {
+    .calendar-day:hover:not(.empty) {
       background: var(--accent-primary);
       color: var(--bg-primary);
       transform: scale(1.05);
@@ -457,7 +418,7 @@
     .calendar-day.today {
       background: var(--accent-primary);
       color: var(--bg-primary);
-      box-shadow: 0 0 20px var(--accent-primary);
+      box-shadow: 0 0 15px var(--accent-primary);
     }
 
     .calendar-day.weekend {
@@ -470,104 +431,37 @@
       cursor: default;
     }
 
-    .calendar-day.empty:hover {
-      background: transparent;
-      transform: none;
-    }
-
     .day-number {
       font-size: 0.9rem;
       font-weight: 500;
     }
 
-    /* Responsive design */
     @media (max-width: 480px) {
-      .demo-container {
-        padding: 15px;
-      }
-
-      .control-panel {
-        padding: 20px;
-      }
-
-      .demo-slide, .calendar-slide {
-        padding: 15px;
-      }
-
-      .slide-number {
-        font-size: 3rem;
-      }
-
-      .slide-title {
-        font-size: 1.3rem;
-      }
-
-      .month-title {
-        font-size: 1.3rem;
-      }
-
-      .day-name, .day-number {
-        font-size: 0.8rem;
-      }
-
-      .demo-footer {
-        padding: 15px;
-      }
+      .demo-container { padding: 15px; }
+      .control-panel { padding: 20px; }
+      .demo-slide, .calendar-slide { padding: 15px; }
+      .slide-number { font-size: 3rem; }
+      .slide-title { font-size: 1.3rem; }
     }
 
-    /* Animations */
     @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .fade-in-up {
-      animation: fadeInUp 0.6s ease-out;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.7;
-      }
-    }
-
-    .pulse {
-      animation: pulse 2s infinite;
-    }
-
-    /* Loading state */
-    .loading {
-      position: relative;
-      overflow: hidden;
-    }
+    .fade-in-up { animation: fadeInUp 0.5s ease-out; }
 
     .loading::after {
       content: '';
       position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+      inset: 0;
+      background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent-primary) 10%, transparent), transparent);
       animation: loading 1.5s infinite;
     }
 
     @keyframes loading {
-      0% {
-        left: -100%;
-      }
-      100% {
-        left: 100%;
-      }
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100%); }
     }
   </style>
 
@@ -583,7 +477,7 @@
         Slide: <span id="current-slide">1</span> / <span id="total-slides">5</span>
       </div>
 
-      <swipe-slider id="main-slider" class="box" draggable mousewheel loop auto-height disable-scroll passive-events>
+      <swipe-slider id="main-slider" class="box" draggable mousewheel loop auto-height disable-scroll passive-events role="region" aria-roledescription="carousel" aria-label="Demo Slider">
         <div class="demo-slide" style="min-height: 240px;">
           <div class="slide-number">01</div>
           <div class="slide-content">
@@ -700,8 +594,8 @@
       </div>
 
       <div class="slider-controls">
-        <button class="control-btn" onclick="mainSlider.prev()">⬅️ Prev</button>
-        <button class="control-btn" onclick="mainSlider.next()">➡️ Next</button>
+        <button class="control-btn" onclick="mainSlider.prev()">&lt; Prev</button>
+        <button class="control-btn" onclick="mainSlider.next()">Next &gt;</button>
       </div>
     </div>
   </div>
@@ -747,25 +641,16 @@
     }
 
     function handleCalendarNavigation(selectedMonth) {
-      // Check if we need to add previous/next month
       if (selectedMonth.nextElementSibling && selectedMonth.previousElementSibling) return;
 
-      const monthTimestamp = Number(selectedMonth.getAttribute('data-month'));
-      const method = selectedMonth.nextElementSibling ? 'prependSlide' : 'appendSlide';
-      const newMonthDate = new Date(monthTimestamp);
+      const isNext = !selectedMonth.nextElementSibling;
+      const method = isNext ? 'appendSlide' : 'prependSlide';
+      const date = new Date(Number(selectedMonth.dataset.month));
+      date.setMonth(date.getMonth() + (isNext ? 1 : -1));
 
-      if (method === 'appendSlide') {
-        newMonthDate.setMonth(newMonthDate.getMonth() + 1);
-      } else {
-        newMonthDate.setMonth(newMonthDate.getMonth() - 1);
-      }
-
-      const newMonthSlide = generateMonthSlide(newMonthDate, -1); // -1 means dynamic slide
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = newMonthSlide;
-      const slideElement = tempDiv.firstElementChild;
-
-      mainSlider[method](slideElement);
+      const temp = document.createElement('div');
+      temp.innerHTML = generateMonthSlide(date);
+      mainSlider[method](temp.firstElementChild);
     }
 
     // Initialize
@@ -776,7 +661,7 @@
       if (mainSlider.swipe) {
         totalSlidesSpan.textContent = mainSlider.getNumSlides();
         currentSlideSpan.textContent = (mainSlider.getPos() || 0) + 1;
-        updateActiveSlide(mainSlider.getPos());
+        if (!isCalendarMode) updateActiveSlide(mainSlider.getPos());
         mainSlider.addEventListener('swipe:change', onSwipeChange);
       } else {
         setTimeout(initIndicator, 50);
@@ -785,134 +670,65 @@
     initIndicator();
 
     function generateDemoSlides() {
-      return `
-        <div class="demo-slide" style="min-height: 240px;">
-          <div class="slide-number">01</div>
-          <div class="slide-content">
-            <div class="slide-title">Welcome</div>
-            <div class="slide-description">
-              Experience smooth swipe interactions with our optimized slider component.
-              Touch, drag, or use navigation controls to explore.
-            </div>
-          </div>
-        </div>
+      const slides = [
+        { num: '01', title: 'Welcome', desc: 'Experience smooth swipe interactions with our optimized slider component.' },
+        { num: '02', title: 'Performance', desc: 'GPU-accelerated transforms ensure 60fps animations. Optimized for mobile devices.' },
+        { num: '03', title: 'Flexible', desc: 'Supports any content type - images, text, complex layouts. Customizable through CSS.' },
+        { num: '04', title: 'Accessible', desc: 'Keyboard navigation, screen reader support, and touch-friendly interactions.' },
+        { num: '05', title: 'Configurable', desc: 'Adjust speed, enable looping, auto-height, and more via attributes.' }
+      ];
 
-        <div class="demo-slide" style="min-height: 320px;">
-          <div class="slide-number">02</div>
+      return slides.map(s => `
+        <div class="demo-slide">
+          <div class="slide-number">${s.num}</div>
           <div class="slide-content">
-            <div class="slide-title">Performance</div>
-            <div class="slide-description">
-              GPU-accelerated transforms ensure 60fps animations.
-              Optimized for mobile devices with minimal layout thrashing.
-              All performance optimizations are enabled by default.
-            </div>
+            <div class="slide-title">${s.title}</div>
+            <div class="slide-description">${s.desc}</div>
           </div>
         </div>
-
-        <div class="demo-slide" style="min-height: 280px;">
-          <div class="slide-number">03</div>
-          <div class="slide-content">
-            <div class="slide-title">Flexible</div>
-            <div class="slide-description">
-              Supports any content type - images, text, complex layouts.
-              Customizable through attributes and CSS variables.
-            </div>
-          </div>
-        </div>
-
-        <div class="demo-slide" style="min-height: 360px;">
-          <div class="slide-number">04</div>
-          <div class="slide-content">
-            <div class="slide-title">Accessible</div>
-            <div class="slide-description">
-              Keyboard navigation, screen reader support, and touch-friendly interactions.
-              Built with modern web standards. This slide has more content to demonstrate
-              the auto-height functionality when enabled.
-            </div>
-          </div>
-        </div>
-
-        <div class="demo-slide" style="min-height: 260px;">
-          <div class="slide-number">05</div>
-          <div class="slide-content">
-            <div class="slide-title">Configurable</div>
-            <div class="slide-description">
-              Adjust speed, enable looping, auto-height, and more.
-              Live configuration changes with instant recreation.
-            </div>
-          </div>
-        </div>
-      `;
+      `).join('');
     }
 
     function generateCalendarSlides() {
       const now = new Date();
       const slides = [];
-
-      // Generate 5 months: -2, -1, 0, +1, +2 from current month
-      for (let i = -2; i <= 2; i++) {
-        const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        slides.push(generateMonthSlide(monthDate, i + 2)); // index 0-4
+      // Generate 3 months: previous, current, next
+      for (let i = -1; i <= 1; i++) {
+        slides.push(generateMonthSlide(new Date(now.getFullYear(), now.getMonth() + i, 1)));
       }
-
       return slides.join('');
     }
 
-    function generateMonthSlide(monthDate, index) {
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                         'July', 'August', 'September', 'October', 'November', 'December'];
-      const monthName = monthNames[monthDate.getMonth()];
-      const year = monthDate.getFullYear();
-
-      // Get first day of month and total days
+    function generateMonthSlide(monthDate) {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
       const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
       const totalDays = lastDay.getDate();
-
-      // Calculate starting day of week (Monday = 0, Sunday = 6)
-      let startDayOfWeek = firstDay.getDay();
-      // Convert to Monday-first (0 = Monday, 6 = Sunday)
-      startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+      const startDayOfWeek = (firstDay.getDay() + 6) % 7; // Monday = 0
 
       const days = [];
-      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const today = new Date().toDateString();
 
-      // Generate calendar grid
-      let dayCounter = 1;
-      const today = new Date();
-
-      for (let week = 0; week < 6; week++) {
-        for (let day = 0; day < 7; day++) {
-          const cellIndex = week * 7 + day;
-
-          if (cellIndex < startDayOfWeek || dayCounter > totalDays) {
-            days.push('<div class="calendar-day empty"></div>');
-          } else {
-            const currentDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), dayCounter);
-            const isToday = currentDate.toDateString() === today.toDateString();
-            const isWeekend = day >= 5; // Saturday and Sunday
-
-            days.push(`
-              <div class="calendar-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
-                <span class="day-number">${dayCounter}</span>
-              </div>
-            `);
-            dayCounter++;
-          }
+      for (let i = 0; i < 42; i++) {
+        const dayNum = i - startDayOfWeek + 1;
+        if (dayNum < 1 || dayNum > totalDays) {
+          days.push('<div class="calendar-day empty"></div>');
+        } else {
+          const date = new Date(monthDate.getFullYear(), monthDate.getMonth(), dayNum);
+          const isToday = date.toDateString() === today;
+          const isWeekend = (i % 7) >= 5;
+          days.push(`<div class="calendar-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}"><span class="day-number">${dayNum}</span></div>`);
         }
       }
 
       return `
         <div class="calendar-slide" data-month="${monthDate.getTime()}">
           <div class="calendar-header">
-            <h3 class="month-title">${monthName} ${year}</h3>
-            <div class="day-names">
-              ${dayNames.map(name => `<div class="day-name">${name}</div>`).join('')}
-            </div>
+            <h3 class="month-title">${monthNames[monthDate.getMonth()]} ${monthDate.getFullYear()}</h3>
+            <div class="day-names">${dayNames.map(n => `<div class="day-name">${n}</div>`).join('')}</div>
           </div>
-          <div class="calendar-grid">
-            ${days.join('')}
-          </div>
+          <div class="calendar-grid">${days.join('')}</div>
         </div>
       `;
     }
@@ -967,7 +783,7 @@
 
         // Add slides based on mode
         if (isCalendarMode) {
-          newSlider.setAttribute('start-slide', '2'); // Start at current month (index 2 of 0-4)
+          newSlider.setAttribute('start-slide', '1'); // Start at current month (index 1 of 0-2)
           newSlider.innerHTML = generateCalendarSlides();
         } else {
           newSlider.innerHTML = generateDemoSlides();
@@ -988,11 +804,9 @@
     function updateActiveSlide(activeElement) {
       const slides = mainSlider.querySelectorAll('.demo-slide');
       if (typeof activeElement === 'number') {
-        activeElement = Array.from(slides).find(s => parseInt(s.dataset.logicalIndex, 10) === activeElement) || slides[activeElement];
+        activeElement = Array.from(slides).find(s => +s.dataset.logicalIndex === activeElement) || slides[activeElement];
       }
-      slides.forEach((slide) => {
-        slide.classList.toggle('active', slide === activeElement);
-      });
+      slides.forEach(s => s.classList.toggle('active', s === activeElement));
     }
 
     // Update calendar active slide

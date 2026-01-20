@@ -461,13 +461,10 @@ function Swipe(container, options = {}) {
       index = newIndex
     },
     appendSlide: slide => {
-      element.children[0]?.remove()
       element.appendChild(slide)
-      index--
       setup()
     },
     prependSlide: slide => {
-      element.children[element.children.length - 1]?.remove()
       element.prepend(slide)
       index++
       setup()
