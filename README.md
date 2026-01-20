@@ -1,8 +1,10 @@
 # Swipe Slider Web Component
 
+[**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
+
 A lightweight, universal web component wrapper for `swipe.js`. Designed for seamless integration into any web project with support for custom events and declarative API.
 
-Based on [swipe.js](https://github.com/thebird/Swipe/blob/master/swipe.js) with modern optimizations for mobile performance.
+Based on [Swipe](https://github.com/thebird/Swipe/) with modern optimizations for mobile performance.
 
 ## Overview
 
