@@ -3,143 +3,80 @@ import Swipe from './swipe3.js'
 /**
  * Universal Swipe Slider Web Component
  * Wrapper around swipe.js
- *
- * @element swipe-slider
- * @attr {number} [start-slide=0] - Initial slide index
- * @attr {number} [speed=400] - Transition speed in milliseconds
- * @attr {boolean} [draggable=false] - Enable mouse dragging
- * @attr {boolean} [no-mousewheel] - Disable mouse wheel navigation
- * @attr {boolean} [disable-scroll=false] - Disable vertical scrolling while swiping
- * @attr {boolean} [stop-propagation=false] - Stop event propagation
- * @attr {boolean} [passive-events=false] - Use passive event listeners (may improve performance but breaks preventDefault)
- * @attr {boolean} [loop=false] - Enable infinite circular loop (moves slides dynamically)
- * @attr {number} [auto-height] - Enable automatic height adjustment. Optional value sets min-height.
- *
- * @fires swipe:change - Fired when the active slide changes. Detail: { index, element, direction }
- * @fires swipe:transition-end - Fired when the transition finishes. Detail: { index, element }
- * @fires swipe:drag-start - Fired when dragging starts. Detail: { index, element }
- * @fires swipe:drag-end - Fired when dragging ends. Detail: { index, element }
- * @fires swipe:move - Fired during movement.
  */
 export default class SwipeSlider extends HTMLElement {
   constructor() {
     super()
-    /** @type {Object|null} Internal Swipe instance */
     this.swipe = null
-    /** @private @type {Object} Internal options storage */
-    this._options = {}
   }
 
-  /** @private */
   connectedCallback() {
     this.init()
   }
-
-  /** @private */
   disconnectedCallback() {
     this.kill()
   }
 
-  /**
-   * Initialize or re-initialize the swipe instance
-   * @param {Object} [options] - Manual options override
-   */
+  _emit(name, detail = {}) {
+    this.dispatchEvent(new CustomEvent(`swipe:${name}`, { detail, bubbles: true }))
+  }
+
+  _idx(el, i) {
+    const li = el?.dataset?.logicalIndex
+    return li !== undefined ? +li : i
+  }
+
   init(options = {}) {
-    if (this.swipe) {
-      this.kill()
-    }
+    if (this.swipe) this.kill()
 
-    // Default options from attributes
-    const startSlide = parseInt(this.getAttribute('start-slide'), 10) || 0
-    const speed = parseInt(this.getAttribute('speed'), 10) || 400
-    const draggable = this.hasAttribute('draggable')
-    const mousewheel = !this.hasAttribute('no-mousewheel')
-    const disableScroll = this.hasAttribute('disable-scroll')
-    const stopPropagation = this.hasAttribute('stop-propagation')
-    const passive = this.hasAttribute('passive-events')
-    const loop = this.hasAttribute('loop')
-    const autoHeight = this.getAttribute('auto-height')
+    const get = a => this.getAttribute(a)
+    const has = a => this.hasAttribute(a)
+    const autoH = get('auto-height')
+    const isLoop = has('loop')
 
-    this._options = {
-      startSlide,
-      speed,
-      draggable,
-      mousewheel,
-      disableScroll,
-      stopPropagation,
-      passive,
+    const sOpts = {
+      startSlide: +(get('start-slide') || 0),
+      speed: +(get('speed') || 400),
+      draggable: has('draggable'),
+      mousewheel: !has('no-mousewheel'),
+      disableScroll: has('disable-scroll'),
+      stopPropagation: has('stop-propagation'),
+      passive: has('passive-events'),
       ...options,
-      callback: (index, element, direction) => {
-        if (autoHeight !== null) {
-          this.adjustHeight(element)
-        }
+      callback: (i, el, dir) => {
+        if (autoH !== null) this.adjustHeight(el)
 
-        // Handle circular loop if enabled
-        if (loop && this.swipe) {
+        if (isLoop && this.swipe) {
           const total = this.swipe.getNumSlides()
-          const isLast = index === total - 1
-          const isFirst = index === 0
-
-          if (isLast || isFirst) {
-            const method = isLast ? 'appendSlide' : 'prependSlide'
+          const method = i === total - 1 ? 'appendSlide' : i === 0 ? 'prependSlide' : null
+          if (method) {
             const wrapper = this.querySelector('.swipe-slider-wrapper')
-            const slideToMove = isLast ? wrapper?.firstElementChild : wrapper?.lastElementChild
-
-            if (slideToMove) {
-              this[method](slideToMove)
-            }
+            const slide = method[0] === 'a' ? wrapper?.firstElementChild : wrapper?.lastElementChild
+            if (slide) this[method](slide)
           }
         }
 
-        const logicalIndex = element.dataset.logicalIndex
-        const finalIndex = logicalIndex !== undefined ? parseInt(logicalIndex, 10) : index
-
-        this.dispatchEvent(
-          new CustomEvent('swipe:change', {
-            detail: { index: finalIndex, element, direction },
-            bubbles: true,
-          })
-        )
-        if (options.callback) options.callback(index, element, direction)
+        this._emit('change', { index: this._idx(el, i), element: el, direction: dir })
+        options.callback?.(i, el, dir)
       },
-      transitionEnd: (index, element) => {
-        this.dispatchEvent(
-          new CustomEvent('swipe:transition-end', {
-            detail: { index, element },
-            bubbles: true,
-          })
-        )
-        if (options.transitionEnd) options.transitionEnd(index, element)
+      transitionEnd: (i, el) => {
+        this._emit('transition-end', { index: i, element: el })
+        options.transitionEnd?.(i, el)
       },
-      dragStart: (index, element) => {
-        this.dispatchEvent(
-          new CustomEvent('swipe:drag-start', {
-            detail: { index, element },
-            bubbles: true,
-          })
-        )
-        if (options.dragStart) options.dragStart(index, element)
+      dragStart: (i, el) => {
+        this._emit('drag-start', { index: i, element: el })
+        options.dragStart?.(i, el)
       },
-      dragEnd: (index, element) => {
-        this.dispatchEvent(
-          new CustomEvent('swipe:drag-end', {
-            detail: { index, element },
-            bubbles: true,
-          })
-        )
-        if (options.dragEnd) options.dragEnd(index, element)
+      dragEnd: (i, el) => {
+        this._emit('drag-end', { index: i, element: el })
+        options.dragEnd?.(i, el)
       },
       runMove: () => {
-        this.dispatchEvent(
-          new CustomEvent('swipe:move', {
-            bubbles: true,
-          })
-        )
-        if (options.runMove) options.runMove()
+        this._emit('move')
+        options.runMove?.()
       },
     }
 
-    // Ensure proper HTML structure for Swipe.js
     let wrapper = this.querySelector('.swipe-slider-wrapper')
     if (!wrapper) {
       wrapper = document.createElement('div')
@@ -147,85 +84,71 @@ export default class SwipeSlider extends HTMLElement {
       let i = 0
       while (this.firstChild) {
         const child = this.firstChild
-        if (child.nodeType === 1) {
-          child.dataset.logicalIndex = i++
-        }
+        if (child instanceof HTMLElement) child.dataset.logicalIndex = String(i++)
         wrapper.appendChild(child)
       }
       this.appendChild(wrapper)
     } else {
-      // Mark existing slides if not already marked
-      Array.from(wrapper.children).forEach((child, i) => {
-        if (child.nodeType === 1 && !child.dataset.logicalIndex) {
-          child.dataset.logicalIndex = i
-        }
+      ;[...wrapper.children].forEach((c, i) => {
+        if (c instanceof HTMLElement && !c.dataset.logicalIndex) c.dataset.logicalIndex = String(i)
       })
     }
 
-    // Wait for next frame to ensure dimensions are calculated
+    if (isLoop && wrapper.children.length > 1) {
+      const first = wrapper.firstElementChild
+      const last = wrapper.lastElementChild
+      if (sOpts.startSlide === 0 && last) {
+        wrapper.prepend(last)
+        sOpts.startSlide = 1
+      } else if (sOpts.startSlide === wrapper.children.length - 1 && first) {
+        wrapper.append(first)
+        sOpts.startSlide = wrapper.children.length - 2
+      }
+    }
+
     requestAnimationFrame(() => {
-      this.swipe = new Swipe(this, this._options)
-      if (autoHeight !== null) {
-        const activeSlide = this.swipe.getPos()
+      // @ts-ignore
+      this.swipe = new Swipe(this, sOpts)
+      if (autoH !== null) {
         const slides = this.querySelectorAll('.swipe-slider-wrapper > *')
-        if (slides[activeSlide]) {
-          this.adjustHeight(slides[activeSlide])
-        }
+        const active = this.swipe?.getPos()
+        if (active !== undefined && slides[active]) this.adjustHeight(slides[active])
       }
       this.dataset.ready = 'true'
     })
   }
 
-  /**
-   * Adjust slider height to match element height
-   * @param {HTMLElement} element
-   */
-  adjustHeight(element) {
-    if (!element) return
-    const minHeight = parseInt(this.getAttribute('auto-height'), 10) || 0
-    this.style.height = Math.max(element.offsetHeight, minHeight) + 'px'
+  adjustHeight(el) {
+    if (!el) return
+    const min = +(this.getAttribute('auto-height') || 0)
+    this.style.height = Math.max(el.offsetHeight, min) + 'px'
   }
 
-  /**
-   * Move to a specific slide
-   * @param {number} to - Slide index
-   * @param {number} [speed] - Transition speed override
-   */
-  slide(to, speed) {
-    return this.swipe?.slide(to, speed)
+  slide(to, s) {
+    return this.swipe?.slide(to, s)
   }
-
-  /** Move to the previous slide */
   prev() {
+    if (this.hasAttribute('loop') && this.swipe?.getPos() === 0) {
+      const s = this.querySelector('.swipe-slider-wrapper')?.lastElementChild
+      if (s instanceof HTMLElement) this.prependSlide(s)
+    }
     return this.swipe?.prev()
   }
-
-  /** Move to the next slide */
   next() {
+    if (this.hasAttribute('loop') && this.swipe?.getPos() === this.swipe?.getNumSlides() - 1) {
+      const s = this.querySelector('.swipe-slider-wrapper')?.firstElementChild
+      if (s instanceof HTMLElement) this.appendSlide(s)
+    }
     return this.swipe?.next()
   }
-
-  /**
-   * Get the current slide index (logical)
-   * @returns {number}
-   */
   getPos() {
-    if (!this.swipe) return 0
-    const index = this.swipe.getPos()
+    const i = this.swipe ? this.swipe.getPos() : 0
     const slides = this.querySelectorAll('.swipe-slider-wrapper > *')
-    const logicalIndex = slides[index]?.dataset?.logicalIndex
-    return logicalIndex !== undefined ? parseInt(logicalIndex, 10) : index
+    return this._idx(slides[i], i)
   }
-
-  /**
-   * Get the total number of slides
-   * @returns {number}
-   */
   getNumSlides() {
     return this.swipe?.getNumSlides()
   }
-
-  /** Kill the swipe instance and clean up */
   kill() {
     if (this.swipe) {
       this.swipe.kill()
@@ -233,34 +156,13 @@ export default class SwipeSlider extends HTMLElement {
     }
     delete this.dataset.ready
   }
-
-  /**
-   * Re-setup the swipe instance with new options
-   * @param {Object} options
-   */
-  setup(options) {
-    if (this.swipe) {
-      this.swipe.setup(options)
-    }
+  setup(o) {
+    this.swipe?.setup(o)
   }
-
-  /**
-   * Append a new slide to the end
-   * @param {HTMLElement} slide
-   */
-  appendSlide(slide) {
-    if (this.swipe) {
-      this.swipe.appendSlide(slide)
-    }
+  appendSlide(s) {
+    this.swipe?.appendSlide(s)
   }
-
-  /**
-   * Prepend a new slide to the beginning
-   * @param {HTMLElement} slide
-   */
-  prependSlide(slide) {
-    if (this.swipe) {
-      this.swipe.prependSlide(slide)
-    }
+  prependSlide(s) {
+    this.swipe?.prependSlide(s)
   }
 }

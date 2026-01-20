@@ -1,24 +1,10 @@
 /**
  * Swipe 3.0 - Optimized for mobile performance
  * Based on https://github.com/thebird/Swipe
- *
- * Optimizations:
- * - GPU-accelerated transforms (translate3d)
- * - will-change hints for compositor
- * - Pointer Events API (unified touch/mouse/pen)
- * - Passive event listeners where possible
- * - Reduced layout thrashing
- * - Modern ES6+ syntax
  */
 
 const root = typeof self === 'object' && self.self === self ? self : typeof globalThis === 'object' ? globalThis : this
 
-/**
- * Debounce function execution
- * @param {Function} fn
- * @param {number} delay
- * @returns {Function}
- */
 function debounce(fn, delay = 150) {
   let timeoutId = null
 
@@ -40,131 +26,99 @@ function debounce(fn, delay = 150) {
   return debounced
 }
 
-/**
- * Check if event is cancelable
- * @param {Event} event
- * @returns {boolean}
- */
 function isCancelable(event) {
   return event && (typeof event.cancelable !== 'boolean' || event.cancelable)
 }
 
-// Feature detection (cached)
 const supports = {
-  passiveEvents: (() => {
-    let passive = false
-    try {
-      const opts = Object.defineProperty({}, 'passive', {
-        get: () => {
-          passive = true
-          return true
-        },
-      })
-      root.addEventListener('test', null, opts)
-      root.removeEventListener('test', null, opts)
-    } catch {
-      passive = false
-    }
-    return passive
-  })(),
   pointerEvents: 'PointerEvent' in root,
   touch: 'ontouchstart' in root,
 }
 
-/**
- * @constructor
- * @param {HTMLElement} container
- * @param {Object} [options]
- */
+const EASING = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+
 function Swipe(container, options = {}) {
   if (!container) return null
 
-  // Options with defaults
   const config = {
-    speed: 400, // Slightly slower for better smoothness (was 300)
+    speed: 400,
     startSlide: 0,
     draggable: false,
     mousewheel: true,
     disableScroll: false,
     stopPropagation: false,
     ignore: null,
-    passive: false, // use passive event listeners (may break preventDefault)
     ...options,
   }
 
-  // Should use passive listeners? (only if browser supports and option enabled)
-  const usePassive = config.passive && supports.passiveEvents
-
-  // State
   let start = {}
   let delta = {}
   let isScrolling
   let index = parseInt(config.startSlide, 10) || 0
 
-  // DOM references
   const element = container.children[0]
   if (!element) return null
 
-  let slides
-  let slidePos
-  let width
-  let length
+  let slides, slidePos, width, length
 
-  // Direction (LTR/RTL)
   const slideDir = (() => {
     const dir = root.getComputedStyle?.(container, null)?.getPropertyValue('direction')
     return dir === 'rtl' ? 'right' : 'left'
   })()
 
-  // Debounced setup for resize
   const debouncedSetup = debounce(setup, 150)
-
-  // Wheel timeout for debouncing wheel events
   let wheelEndTimeout = null
 
-  // Event handlers object (for handleEvent pattern)
+  const run = (name, ...args) => config[name]?.(...args)
+
+  // Unified event handlers
   const events = {
     handleEvent(event) {
       switch (event.type) {
-        // Pointer Events (modern unified API)
         case 'pointerdown':
-          this.onPointerDown(event)
+          this.onStart(event, event.clientX, event.clientY, event.pointerId)
           break
         case 'pointermove':
-          this.onPointerMove(event)
+          if (event.isPrimary && event.pointerId === start.pointerId) {
+            this.onMove(event, event.clientX, event.clientY)
+          }
           break
         case 'pointerup':
         case 'pointercancel':
         case 'pointerleave':
-          this.onPointerUp(event)
+          this.onEnd(event, 'pointer')
           break
 
-        // Legacy touch events (fallback)
         case 'touchstart':
-          this.onTouchStart(event)
+          if (event.touches[0]) {
+            this.onStart(event, event.touches[0].pageX, event.touches[0].pageY)
+          }
           break
         case 'touchmove':
-          this.onTouchMove(event)
+          if (event.touches.length === 1 && !(event.scale && event.scale !== 1)) {
+            this.onMove(event, event.touches[0].pageX, event.touches[0].pageY)
+          }
           break
         case 'touchend':
-          this.onTouchEnd(event)
+          this.onEnd(event, 'touch')
           break
 
-        // Mouse events (fallback for draggable)
         case 'mousedown':
-          this.onMouseDown(event)
+          event.preventDefault()
+          this.onStart(event, event.pageX, event.pageY)
           break
         case 'mousemove':
-          this.onMouseMove(event)
+          this.onMove(event, event.pageX, event.pageY)
           break
         case 'mouseup':
         case 'mouseleave':
-          this.onMouseUp(event)
+          this.onEnd(event, 'mouse')
           break
 
-        // Other
         case 'transitionend':
-          this.onTransitionEnd(event)
+          if (parseInt(event.target.getAttribute('data-index'), 10) === index) {
+            run('transitionEnd', index, slides[index])
+          }
           break
         case 'resize':
           debouncedSetup()
@@ -174,70 +128,55 @@ function Swipe(container, options = {}) {
           break
       }
 
-      if (config.stopPropagation) {
-        event.stopPropagation()
-      }
+      if (config.stopPropagation) event.stopPropagation()
     },
 
-    // ========== Pointer Events (preferred) ==========
-    pointerCaptured: false,
+    captured: false,
 
-    onPointerDown(event) {
-      // Ignore non-primary pointer (multi-touch)
-      if (!event.isPrimary) return
-
-      // Ignore if target matches ignore selector
+    onStart(event, x, y, pointerId) {
+      if (event.type === 'pointerdown' && !event.isPrimary) return
       if (config.ignore && event.target.matches(config.ignore)) return
 
-      // Store start position (do NOT capture yet - allow clicks to work)
-      start = {
-        x: event.clientX,
-        y: event.clientY,
-        time: Date.now(),
-        pointerId: event.pointerId,
-      }
-
+      start = { x, y, time: Date.now(), pointerId }
       isScrolling = undefined
       delta = {}
-      this.pointerCaptured = false
+      this.captured = false
 
-      // Attach move/up listeners
-      element.addEventListener('pointermove', this, { passive: false })
-      element.addEventListener('pointerup', this)
-      element.addEventListener('pointercancel', this)
-
-      runDragStart(getPos(), slides[index])
-    },
-
-    onPointerMove(event) {
-      if (!event.isPrimary || event.pointerId !== start.pointerId) return
-
-      delta = {
-        x: event.clientX - start.x,
-        y: event.clientY - start.y,
+      if (event.type === 'pointerdown') {
+        element.addEventListener('pointermove', this, { passive: false })
+        element.addEventListener('pointerup', this)
+        element.addEventListener('pointercancel', this)
+        element.addEventListener('pointerleave', this)
+      } else if (event.type === 'touchstart') {
+        element.addEventListener('touchmove', this, { passive: false })
+        element.addEventListener('touchend', this)
+      } else {
+        element.addEventListener('mousemove', this)
+        element.addEventListener('mouseup', this)
+        element.addEventListener('mouseleave', this)
       }
 
-      // Determine scroll direction (one-time check)
+      run('dragStart', index, slides[index])
+    },
+
+    onMove(event, x, y) {
+      delta = { x: x - start.x, y: y - start.y }
+
       if (isScrolling === undefined) {
         const sensitivity = 10
         isScrolling = Math.abs(delta.y) > Math.abs(delta.x) + sensitivity
 
-        // Capture pointer ONLY when we know this is a horizontal swipe
-        if (!isScrolling && !this.pointerCaptured) {
+        if (!isScrolling && !this.captured && event.type === 'pointermove') {
           element.setPointerCapture(event.pointerId)
-          this.pointerCaptured = true
+          this.captured = true
         }
       }
 
       if (!isScrolling) {
         if (isCancelable(event)) event.preventDefault()
+        run('runMove')
 
-        runMove()
-
-        // Apply resistance at boundaries
         const resistedDelta = applyResistance(delta.x)
-
-        // Translate slides
         translate(index - 1, resistedDelta + slidePos[index - 1], 0)
         translate(index, resistedDelta + slidePos[index], 0)
         translate(index + 1, resistedDelta + slidePos[index + 1], 0)
@@ -246,144 +185,47 @@ function Swipe(container, options = {}) {
       }
     },
 
-    onPointerUp(event) {
-      if (!event.isPrimary) return
+    onEnd(event, type) {
+      if (type === 'pointer' && !event.isPrimary) return
 
-      // Release capture only if we captured
-      if (this.pointerCaptured) {
+      if (this.captured) {
         element.releasePointerCapture(event.pointerId)
-        this.pointerCaptured = false
+        this.captured = false
       }
 
-      // Remove listeners
-      element.removeEventListener('pointermove', this)
-      element.removeEventListener('pointerup', this)
-      element.removeEventListener('pointercancel', this)
+      if (type === 'pointer') {
+        element.removeEventListener('pointermove', this)
+        element.removeEventListener('pointerup', this)
+        element.removeEventListener('pointercancel', this)
+        element.removeEventListener('pointerleave', this)
+      } else if (type === 'touch') {
+        element.removeEventListener('touchmove', this)
+        element.removeEventListener('touchend', this)
+      } else {
+        element.removeEventListener('mousemove', this)
+        element.removeEventListener('mouseup', this)
+        element.removeEventListener('mouseleave', this)
+      }
 
       this.finishSwipe()
     },
 
-    // ========== Legacy Touch Events (fallback) ==========
-    onTouchStart(event) {
-      const touch = event.touches[0]
-      if (!touch) return
-
-      if (config.ignore && touch.target.matches(config.ignore)) return
-
-      start = {
-        x: touch.pageX,
-        y: touch.pageY,
-        time: Date.now(),
-      }
-
-      isScrolling = undefined
-      delta = {}
-
-      element.addEventListener('touchmove', this, supports.passiveEvents ? { passive: false } : false)
-      element.addEventListener('touchend', this)
-
-      runDragStart(getPos(), slides[index])
-    },
-
-    onTouchMove(event) {
-      if (event.touches.length > 1 || (event.scale && event.scale !== 1)) return
-
-      const touch = event.touches[0]
-
-      delta = {
-        x: touch.pageX - start.x,
-        y: touch.pageY - start.y,
-      }
-
-      if (isScrolling === undefined) {
-        const sensitivity = 10
-        isScrolling = Math.abs(delta.y) > Math.abs(delta.x) + sensitivity
-      }
-
-      if (!isScrolling) {
-        if (isCancelable(event)) event.preventDefault()
-
-        runMove()
-
-        const resistedDelta = applyResistance(delta.x)
-
-        translate(index - 1, resistedDelta + slidePos[index - 1], 0)
-        translate(index, resistedDelta + slidePos[index], 0)
-        translate(index + 1, resistedDelta + slidePos[index + 1], 0)
-      } else if (config.disableScroll && isCancelable(event)) {
-        event.preventDefault()
-      }
-    },
-
-    onTouchEnd() {
-      element.removeEventListener('touchmove', this, supports.passiveEvents ? { passive: false } : false)
-      element.removeEventListener('touchend', this)
-
-      this.finishSwipe()
-    },
-
-    // ========== Mouse Events (for draggable option) ==========
-    onMouseDown(event) {
-      if (config.ignore && event.target.matches(config.ignore)) return
-
-      event.preventDefault() // Prevent text selection
-
-      start = {
-        x: event.pageX,
-        y: event.pageY,
-        time: Date.now(),
-      }
-
-      isScrolling = undefined
-      delta = {}
-
-      element.addEventListener('mousemove', this)
-      element.addEventListener('mouseup', this)
-      element.addEventListener('mouseleave', this)
-
-      runDragStart(getPos(), slides[index])
-    },
-
-    onMouseMove(event) {
-      delta = {
-        x: event.pageX - start.x,
-        y: event.pageY - start.y,
-      }
-
-      if (isScrolling === undefined) {
-        const sensitivity = 10
-        isScrolling = sensitivity + Math.abs(delta.x) < Math.abs(delta.y)
-      }
-
-      if (!isScrolling) {
-        runMove()
-
-        const resistedDelta = applyResistance(delta.x)
-
-        translate(index - 1, resistedDelta + slidePos[index - 1], 0)
-        translate(index, resistedDelta + slidePos[index], 0)
-        translate(index + 1, resistedDelta + slidePos[index + 1], 0)
-      }
-    },
-
-    onMouseUp() {
-      element.removeEventListener('mousemove', this)
-      element.removeEventListener('mouseup', this)
-      element.removeEventListener('mouseleave', this)
-
-      this.finishSwipe()
-    },
-
-    // ========== Wheel Events ==========
     onWheel(event) {
-      if (Math.abs(event.deltaX) < 3) return
+      let deltaX = event.deltaX
+      let deltaY = event.deltaY
+      if (event.deltaMode === 1) {
+        deltaX *= 40
+        deltaY *= 40
+      } else if (event.deltaMode === 2) {
+        deltaX *= width
+        deltaY *= width
+      }
 
+      if (Math.abs(deltaX) < 3) return
       if (isCancelable(event)) event.preventDefault()
 
-      // Initialize timing
       if (!delta.x) start.time = Date.now()
 
-      // Apply progressive slowdown
       let slower = 0.7
       const absDelta = Math.abs(delta.x || 0)
       if (absDelta > width * 0.5) slower = 0.3
@@ -392,17 +234,15 @@ function Swipe(container, options = {}) {
       if (absDelta > width * 2) slower = 0.01
 
       delta = {
-        x: (delta.x || 0) - event.deltaX * slower,
-        y: (delta.y || 0) - event.deltaY * 0.5,
+        x: (delta.x || 0) - deltaX * slower,
+        y: (delta.y || 0) - deltaY * 0.5,
       }
 
       const resistedDelta = applyResistance(delta.x)
-
       translate(index - 1, resistedDelta + slidePos[index - 1], 0)
       translate(index, resistedDelta + slidePos[index], 0)
       translate(index + 1, resistedDelta + slidePos[index + 1], 0)
 
-      // Debounce wheel end
       if (wheelEndTimeout) clearTimeout(wheelEndTimeout)
       wheelEndTimeout = setTimeout(() => {
         this.finishSwipe()
@@ -411,56 +251,37 @@ function Swipe(container, options = {}) {
       }, 50)
     },
 
-    // ========== Transition End ==========
-    onTransitionEnd(event) {
-      const slideIndex = parseInt(event.target.getAttribute('data-index'), 10)
-      if (slideIndex === index) {
-        runTransitionEnd(getPos(), slides[index])
-      }
-    },
-
-    // ========== Common finish logic ==========
     finishSwipe() {
       const duration = Date.now() - start.time
       const absX = Math.abs(delta.x || 0)
-
-      // Valid swipe: fast + short distance, or slow + long distance
       const isValidSlide = (duration < 250 && absX > 20) || absX > width / 2
-
-      // Past bounds check
       const isPastBounds = (!index && delta.x > 0) || (index === slides.length - 1 && delta.x < 0)
-
       const direction = delta.x ? Math.abs(delta.x) / delta.x : 0
 
       if (!isScrolling && delta.x) {
         if (isValidSlide && !isPastBounds) {
           if (direction < 0) {
-            // Swipe left (next)
             move(index - 1, -width, 0)
             move(index, slidePos[index] - width, config.speed)
             move(circle(index + 1), slidePos[circle(index + 1)] - width, config.speed)
             index = circle(index + 1)
           } else {
-            // Swipe right (prev)
             move(index + 1, width, 0)
             move(index, slidePos[index] + width, config.speed)
             move(circle(index - 1), slidePos[circle(index - 1)] + width, config.speed)
             index = circle(index - 1)
           }
-          runCallback(getPos(), slides[index], direction)
+          run('callback', index, slides[index], direction)
         } else {
-          // Snap back
           move(index - 1, -width, config.speed)
           move(index, 0, config.speed)
           move(index + 1, width, config.speed)
         }
       }
 
-      runDragEnd(getPos(), slides[index])
+      run('dragEnd', index, slides[index])
     },
   }
-
-  // ========== Internal functions ==========
 
   function applyResistance(deltaX) {
     const atStart = !index && deltaX > 0
@@ -485,8 +306,7 @@ function Swipe(container, options = {}) {
     if (!slide?.style) return
 
     slide.style.transitionDuration = speed + 'ms'
-    slide.style.transitionTimingFunction = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)' // Smoother ease-out
-    // GPU-accelerated transform
+    slide.style.transitionTimingFunction = EASING
     slide.style.transform = `translate3d(${dist}px, 0, 0)`
   }
 
@@ -498,29 +318,23 @@ function Swipe(container, options = {}) {
 
     if (!length) return
 
-    // Read phase (avoid layout thrashing)
     width = container.getBoundingClientRect().width || container.offsetWidth
 
-    // Write phase
     slidePos = new Array(length)
     element.style.width = length * width * 2 + 'px'
 
-    // Setup each slide
     for (let i = length - 1; i >= 0; i--) {
       const slide = slides[i]
 
-      // GPU optimization hints
       slide.style.willChange = 'transform'
       slide.style.width = width + 'px'
       slide.setAttribute('data-index', i)
       slide.style[slideDir] = i * -width + 'px'
 
-      // RTL support
       if (slideDir === 'right') {
         slide.style.float = 'right'
       }
 
-      // Initial position
       const initialDist = index > i ? -width : index < i ? width : 0
       move(i, initialDist, 0)
     }
@@ -530,31 +344,21 @@ function Swipe(container, options = {}) {
   }
 
   function attachEvents() {
-    // Passive option for start events (passive: true may break preventDefault)
-    const passiveOption = usePassive ? { passive: true } : false
-
-    // Use Pointer Events if available (preferred)
     if (supports.pointerEvents) {
-      element.addEventListener('pointerdown', events, passiveOption)
+      element.addEventListener('pointerdown', events)
     } else if (supports.touch) {
-      // Fallback to touch events
-      element.addEventListener('touchstart', events, passiveOption)
+      element.addEventListener('touchstart', events)
     }
 
-    // Mouse dragging (desktop)
     if (config.draggable && !supports.pointerEvents) {
       element.addEventListener('mousedown', events)
     }
 
-    // Wheel navigation (always non-passive to allow preventDefault)
     if (config.mousewheel) {
       element.addEventListener('wheel', events, { passive: false })
     }
 
-    // Transition end
     element.addEventListener('transitionend', events)
-
-    // Resize
     root.addEventListener('resize', events)
   }
 
@@ -580,13 +384,7 @@ function Swipe(container, options = {}) {
     root.removeEventListener('resize', events)
   }
 
-  function getPos() {
-    let currentIndex = index
-    if (currentIndex >= length) {
-      currentIndex -= length
-    }
-    return currentIndex
-  }
+  const getPos = () => index
 
   function slideTo(to, slideSpeed) {
     to = typeof to === 'number' ? to : parseInt(to, 10)
@@ -608,7 +406,7 @@ function Swipe(container, options = {}) {
     index = to
 
     requestAnimationFrame(() => {
-      runCallback(getPos(), slides[index], direction)
+      run('callback', index, slides[index], direction)
     })
   }
 
@@ -634,12 +432,11 @@ function Swipe(container, options = {}) {
         continue
       }
 
-      // Reset styles
       slide.style.width = ''
       slide.style[slideDir] = ''
       slide.style.transitionDuration = ''
       slide.style.transform = ''
-      slide.style.willChange = '' // Remove compositor hint
+      slide.style.willChange = ''
     }
 
     detachEvents()
@@ -651,31 +448,8 @@ function Swipe(container, options = {}) {
     }
   }
 
-  // Callback runners
-  function runCallback(pos, slide, dir) {
-    config.callback?.(pos, slide, dir)
-  }
-
-  function runTransitionEnd(pos, slide) {
-    config.transitionEnd?.(pos, slide)
-  }
-
-  function runDragStart(pos, slide) {
-    config.dragStart?.(pos, slide)
-  }
-
-  function runDragEnd(pos, slide) {
-    config.dragEnd?.(pos, slide)
-  }
-
-  function runMove() {
-    config.runMove?.()
-  }
-
-  // Initialize
   setup()
 
-  // Public API
   return {
     setup,
     slide: slideTo,

@@ -2,13 +2,7 @@
 
 [**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
 
-A lightweight, universal web component wrapper for `swipe.js`. Designed for seamless integration into any web project with support for custom events and declarative API.
-
-Based on [Swipe](https://github.com/thebird/Swipe/) with modern optimizations for mobile performance.
-
-## Overview
-
-**Zero-dependencies vanilla JavaScript & CSS** - A lightweight Web Component that works anywhere without any framework dependencies. Just drop it into your project and start using it immediately.
+**Zero-dependencies, framework agnostic vanilla JavaScript & CSS (< 4KB gzipped)**. A lightweight, universal web component wrapper for `swipe.js`, based on [Swipe](https://github.com/thebird/Swipe/) with modern optimizations for mobile performance. Designed for seamless integration into any web project with support for custom events and a declarative API. Just drop it into your project and start using it immediately.
 
 ## Features
 
@@ -45,8 +39,8 @@ Then use it in HTML:
 
 ```html
 <my-slider>
-  <div class="slide">Slide 1</div>
-  <div class="slide">Slide 2</div>
+  <div>Slide 1</div>
+  <div>Slide 2</div>
 </my-slider>
 ```
 
@@ -75,9 +69,9 @@ customElements.define('my-custom-slider', MyCustomSlider);
 
 ```html
 <swipe-slider draggable mousewheel>
-  <div class="slide">Slide 1</div>
-  <div class="slide">Slide 2</div>
-  <div class="slide">Slide 3</div>
+  <div>Slide 1</div>
+  <div>Slide 2</div>
+  <div>Slide 3</div>
 </swipe-slider>
 ```
 
@@ -154,9 +148,9 @@ import Swipe from './swipe3.js';
 ```html
 <div id="slider-container">
   <div class="slides">
-    <div class="slide">Slide 1</div>
-    <div class="slide">Slide 2</div>
-    <div class="slide">Slide 3</div>
+    <div>Slide 1</div>
+    <div>Slide 2</div>
+    <div>Slide 3</div>
   </div>
 </div>
 ```
@@ -206,7 +200,6 @@ swipeInstance.getNumSlides();   // Get total number of slides
 
 // Add slides dynamically
 const newSlide = document.createElement('div');
-newSlide.className = 'slide';
 newSlide.textContent = 'New Slide';
 swipeInstance.appendSlide(newSlide);
 
@@ -230,7 +223,7 @@ When using directly, you'll need to add basic CSS:
   white-space: nowrap;
 }
 
-.slide {
+.slides > * {
   display: inline-block;
   vertical-align: top;
   white-space: normal;
@@ -308,3 +301,11 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 | Passive event listeners | Non-blocking touch listeners where possible (via `passive-events` attr) |
 | Reduced layout thrashing | Batched DOM reads/writes to minimize reflows |
 | Modern ES6+ syntax | Latest JavaScript features for better performance and maintainability |
+| Size (Gzipped) | ~3.8 KB for the entire component (JS + CSS) |
+
+## Size
+
+| Metric | JavaScript | CSS | Total |
+|--------|------------|-----|-------|
+| Minified | 9.8 KB | 0.3 KB | **10.1 KB** |
+| Minified + Gzip | 3.2 KB | 0.2 KB | **3.4 KB** |
