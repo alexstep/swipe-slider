@@ -91,9 +91,12 @@ export default class SwipeSlider extends HTMLElement {
           }
         }
 
+        const logicalIndex = element.dataset.logicalIndex
+        const finalIndex = logicalIndex !== undefined ? parseInt(logicalIndex, 10) : index
+
         this.dispatchEvent(
           new CustomEvent('swipe:change', {
-            detail: { index, element, direction },
+            detail: { index: finalIndex, element, direction },
             bubbles: true,
           })
         )
@@ -137,16 +140,26 @@ export default class SwipeSlider extends HTMLElement {
     }
 
     // Ensure proper HTML structure for Swipe.js
-    // Swipe expects: container > wrapper > slides
-    // We use 'this' as container
     let wrapper = this.querySelector('.swipe-slider-wrapper')
     if (!wrapper) {
       wrapper = document.createElement('div')
       wrapper.className = 'swipe-slider-wrapper'
+      let i = 0
       while (this.firstChild) {
-        wrapper.appendChild(this.firstChild)
+        const child = this.firstChild
+        if (child.nodeType === 1) {
+          child.dataset.logicalIndex = i++
+        }
+        wrapper.appendChild(child)
       }
       this.appendChild(wrapper)
+    } else {
+      // Mark existing slides if not already marked
+      Array.from(wrapper.children).forEach((child, i) => {
+        if (child.nodeType === 1 && !child.dataset.logicalIndex) {
+          child.dataset.logicalIndex = i
+        }
+      })
     }
 
     // Wait for next frame to ensure dimensions are calculated
@@ -193,11 +206,15 @@ export default class SwipeSlider extends HTMLElement {
   }
 
   /**
-   * Get the current slide index
+   * Get the current slide index (logical)
    * @returns {number}
    */
   getPos() {
-    return this.swipe?.getPos()
+    if (!this.swipe) return 0
+    const index = this.swipe.getPos()
+    const slides = this.querySelectorAll('.swipe-slider-wrapper > *')
+    const logicalIndex = slides[index]?.dataset?.logicalIndex
+    return logicalIndex !== undefined ? parseInt(logicalIndex, 10) : index
   }
 
   /**

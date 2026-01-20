@@ -14,6 +14,53 @@
 
 
   <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-touch-callout: none;
+      user-select: none;
+    }
+    textarea,
+    input[type="text"],
+    input[type="password"],
+    input[type="email"],
+    input[type="number"] {
+      user-select: text;
+    }
+    /* Disable drag content */
+    *,
+    *::after,
+    *::before {
+      -webkit-user-drag: none;
+      -webkit-app-region: no-drag;
+    }
+    input:-webkit-autofill,
+    input:-webkit-autofill:focus {
+      transition:
+        background-color 600000s 0s,
+        color 600000s 0s;
+    }
+    input[data-autocompleted] {
+      background-color: transparent !important;
+    }
+    img {
+      text-indent: -10000px;
+      background: rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+    img[alt]:after {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-color);
+      text-align: center;
+      content: " ";
+    }
+
     :root {
       --bg-primary: #0a0a0a;
       --bg-secondary: #1a1a1a;
@@ -60,6 +107,16 @@
 
 
     /* Main container */
+    .box {
+      position: relative;
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 10px;
+      overflow: hidden;
+      border: none;
+      border-top: 1px solid rgba(255, 255, 255, 0.01);
+      box-shadow: none;
+    }
+
     .demo-container {
       max-width: 480px;
       margin: 0 auto;
@@ -69,15 +126,9 @@
 
     /* Control panel */
     .control-panel {
-      background: var(--glass-bg);
-      border: 1px solid var(--glass-border);
-      border-radius: 20px;
       padding: 25px;
       margin-bottom: 30px;
       backdrop-filter: blur(20px);
-      box-shadow: 0 8px 32px var(--shadow-color);
-      position: relative;
-      overflow: hidden;
     }
 
     .control-panel::before {
@@ -126,7 +177,7 @@
     /* Toggle switches - using base.css styles */
     .toggle-container {
       display: flex;
-      gap: 15px;
+      gap: 0;
       flex-wrap: wrap;
     }
 
@@ -134,14 +185,14 @@
       appearance: none;
       cursor: pointer;
       display: inline-block;
-      background: var(--bg-tertiary);
+      background: #39383e;
       border-radius: 16px;
       width: 50px;
       height: 28px;
       position: relative;
       vertical-align: middle;
       transition: background 0.25s;
-      border-top: 1px solid var(--border-color);
+      border-top: 1px solid rgba(0, 0, 0, 0.5);
     }
 
     input[type="checkbox"].toggle:before,
@@ -159,12 +210,12 @@
       aspect-ratio: 1;
       position: absolute;
       top: 1.5px;
-      left: 2px;
+      left: 3px;
       transition: transform 0.25s;
     }
 
     input[type="checkbox"].toggle:checked {
-      background: var(--accent-primary);
+      background: #66cc67;
     }
 
     input[type="checkbox"].toggle:checked:before {
@@ -174,11 +225,13 @@
     .toggle-label {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
       font-size: 0.85rem;
       color: var(--text-primary);
       cursor: pointer;
       user-select: none;
+      width: 50%;
+      margin-bottom: 12px;
     }
 
     /* Slider controls */
@@ -237,11 +290,6 @@
 
     /* Custom slider styling */
     swipe-slider {
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 10px 40px var(--shadow-color);
-      border: 1px solid var(--glass-border);
-      background: var(--glass-bg);
       backdrop-filter: blur(20px);
     }
 
@@ -317,7 +365,6 @@
 
     /* Footer */
     .demo-footer {
-      background: var(--bg-secondary);
       border-top: 1px solid var(--border-color);
       padding: 20px;
       text-align: center;
@@ -337,7 +384,6 @@
 
     .footer-link:hover {
       color: var(--accent-secondary);
-      text-shadow: 0 0 10px var(--accent-primary);
     }
 
     .footer-link::before {
@@ -537,7 +583,7 @@
         Slide: <span id="current-slide">1</span> / <span id="total-slides">5</span>
       </div>
 
-      <swipe-slider id="main-slider" draggable mousewheel loop auto-height disable-scroll passive-events>
+      <swipe-slider id="main-slider" class="box" draggable mousewheel loop auto-height disable-scroll passive-events>
         <div class="demo-slide" style="min-height: 240px;">
           <div class="slide-number">01</div>
           <div class="slide-content">
@@ -598,7 +644,7 @@
     </div>
 
     <!-- Control Panel -->
-    <div class="control-panel fade-in-up">
+    <div class="control-panel box fade-in-up">
       <h2>Configuration</h2>
 
       <div class="control-group">
@@ -686,12 +732,190 @@
     // Calendar mode state
     let isCalendarMode = false;
 
+    // Event listener for slide changes
+    function onSwipeChange(e) {
+      const { index, element } = e.detail;
+      currentSlideSpan.textContent = index + 1;
+
+      if (isCalendarMode) {
+        updateCalendarActiveSlide(index);
+        // Add/remove months dynamically
+        handleCalendarNavigation(element);
+      } else {
+        updateActiveSlide(element);
+      }
+    }
+
+    function handleCalendarNavigation(selectedMonth) {
+      // Check if we need to add previous/next month
+      if (selectedMonth.nextElementSibling && selectedMonth.previousElementSibling) return;
+
+      const monthTimestamp = Number(selectedMonth.getAttribute('data-month'));
+      const method = selectedMonth.nextElementSibling ? 'prependSlide' : 'appendSlide';
+      const newMonthDate = new Date(monthTimestamp);
+
+      if (method === 'appendSlide') {
+        newMonthDate.setMonth(newMonthDate.getMonth() + 1);
+      } else {
+        newMonthDate.setMonth(newMonthDate.getMonth() - 1);
+      }
+
+      const newMonthSlide = generateMonthSlide(newMonthDate, -1); // -1 means dynamic slide
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = newMonthSlide;
+      const slideElement = tempDiv.firstElementChild;
+
+      mainSlider[method](slideElement);
+    }
+
     // Initialize
-    setTimeout(() => {
-      totalSlidesSpan.textContent = mainSlider.getNumSlides();
-      currentSlideSpan.textContent = mainSlider.getPos() + 1;
-      updateActiveSlide(mainSlider.getPos());
-    }, 100);
+    function initIndicator() {
+      const indicator = document.getElementById('status-indicator');
+      indicator.style.display = isCalendarMode ? 'none' : 'block';
+
+      if (mainSlider.swipe) {
+        totalSlidesSpan.textContent = mainSlider.getNumSlides();
+        currentSlideSpan.textContent = (mainSlider.getPos() || 0) + 1;
+        updateActiveSlide(mainSlider.getPos());
+        mainSlider.addEventListener('swipe:change', onSwipeChange);
+      } else {
+        setTimeout(initIndicator, 50);
+      }
+    }
+    initIndicator();
+
+    function generateDemoSlides() {
+      return `
+        <div class="demo-slide" style="min-height: 240px;">
+          <div class="slide-number">01</div>
+          <div class="slide-content">
+            <div class="slide-title">Welcome</div>
+            <div class="slide-description">
+              Experience smooth swipe interactions with our optimized slider component.
+              Touch, drag, or use navigation controls to explore.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 320px;">
+          <div class="slide-number">02</div>
+          <div class="slide-content">
+            <div class="slide-title">Performance</div>
+            <div class="slide-description">
+              GPU-accelerated transforms ensure 60fps animations.
+              Optimized for mobile devices with minimal layout thrashing.
+              All performance optimizations are enabled by default.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 280px;">
+          <div class="slide-number">03</div>
+          <div class="slide-content">
+            <div class="slide-title">Flexible</div>
+            <div class="slide-description">
+              Supports any content type - images, text, complex layouts.
+              Customizable through attributes and CSS variables.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 360px;">
+          <div class="slide-number">04</div>
+          <div class="slide-content">
+            <div class="slide-title">Accessible</div>
+            <div class="slide-description">
+              Keyboard navigation, screen reader support, and touch-friendly interactions.
+              Built with modern web standards. This slide has more content to demonstrate
+              the auto-height functionality when enabled.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 260px;">
+          <div class="slide-number">05</div>
+          <div class="slide-content">
+            <div class="slide-title">Configurable</div>
+            <div class="slide-description">
+              Adjust speed, enable looping, auto-height, and more.
+              Live configuration changes with instant recreation.
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function generateCalendarSlides() {
+      const now = new Date();
+      const slides = [];
+
+      // Generate 5 months: -2, -1, 0, +1, +2 from current month
+      for (let i = -2; i <= 2; i++) {
+        const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        slides.push(generateMonthSlide(monthDate, i + 2)); // index 0-4
+      }
+
+      return slides.join('');
+    }
+
+    function generateMonthSlide(monthDate, index) {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                         'July', 'August', 'September', 'October', 'November', 'December'];
+      const monthName = monthNames[monthDate.getMonth()];
+      const year = monthDate.getFullYear();
+
+      // Get first day of month and total days
+      const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+      const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+      const totalDays = lastDay.getDate();
+
+      // Calculate starting day of week (Monday = 0, Sunday = 6)
+      let startDayOfWeek = firstDay.getDay();
+      // Convert to Monday-first (0 = Monday, 6 = Sunday)
+      startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+      const days = [];
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+      // Generate calendar grid
+      let dayCounter = 1;
+      const today = new Date();
+
+      for (let week = 0; week < 6; week++) {
+        for (let day = 0; day < 7; day++) {
+          const cellIndex = week * 7 + day;
+
+          if (cellIndex < startDayOfWeek || dayCounter > totalDays) {
+            days.push('<div class="calendar-day empty"></div>');
+          } else {
+            const currentDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), dayCounter);
+            const isToday = currentDate.toDateString() === today.toDateString();
+            const isWeekend = day >= 5; // Saturday and Sunday
+
+            days.push(`
+              <div class="calendar-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
+                <span class="day-number">${dayCounter}</span>
+              </div>
+            `);
+            dayCounter++;
+          }
+        }
+      }
+
+      return `
+        <div class="calendar-slide" data-month="${monthDate.getTime()}">
+          <div class="calendar-header">
+            <h3 class="month-title">${monthName} ${year}</h3>
+            <div class="day-names">
+              ${dayNames.map(name => `<div class="day-name">${name}</div>`).join('')}
+            </div>
+          </div>
+          <div class="calendar-grid">
+            ${days.join('')}
+          </div>
+        </div>
+      `;
+    }
 
     // Toggle option function - auto recreates slider
     function toggleOption(option) {
@@ -702,12 +926,23 @@
     // Toggle calendar mode
     function toggleCalendarMode() {
       isCalendarMode = !isCalendarMode;
+      const loopToggle = document.getElementById('loop-toggle');
+      if (isCalendarMode) {
+        loopToggle.disabled = true;
+        loopToggle.parentElement.style.opacity = '0.5';
+      } else {
+        loopToggle.disabled = false;
+        loopToggle.parentElement.style.opacity = '1';
+        loopToggle.checked = config.loop;
+      }
       recreateSlider();
     }
 
     // Recreate slider with new config
     function recreateSlider() {
       const sliderContainer = mainSlider.parentElement;
+      const indicator = document.getElementById('status-indicator');
+      indicator.style.display = isCalendarMode ? 'none' : 'block';
 
       // Add loading effect
       mainSlider.classList.add('loading');
@@ -719,152 +954,23 @@
         // Create new slider
         const newSlider = document.createElement('swipe-slider');
         newSlider.id = 'main-slider';
+        newSlider.className = 'box';
 
         // Apply configuration
         Object.keys(config).forEach(key => {
           if (config[key]) {
+            // Disable built-in loop in calendar mode to avoid conflicts with dynamic loading
+            if (key === 'loop' && isCalendarMode) return;
             newSlider.setAttribute(key, config[key] === true ? '' : config[key]);
           }
         });
 
         // Add slides based on mode
         if (isCalendarMode) {
+          newSlider.setAttribute('start-slide', '2'); // Start at current month (index 2 of 0-4)
           newSlider.innerHTML = generateCalendarSlides();
         } else {
           newSlider.innerHTML = generateDemoSlides();
-        }
-
-        function generateDemoSlides() {
-          return `
-            <div class="demo-slide" style="min-height: 240px;">
-              <div class="slide-number">01</div>
-              <div class="slide-content">
-                <div class="slide-title">Welcome</div>
-                <div class="slide-description">
-                  Experience smooth swipe interactions with our optimized slider component.
-                  Touch, drag, or use navigation controls to explore.
-                </div>
-              </div>
-            </div>
-
-            <div class="demo-slide" style="min-height: 320px;">
-              <div class="slide-number">02</div>
-              <div class="slide-content">
-                <div class="slide-title">Performance</div>
-                <div class="slide-description">
-                  GPU-accelerated transforms ensure 60fps animations.
-                  Optimized for mobile devices with minimal layout thrashing.
-                  All performance optimizations are enabled by default.
-                </div>
-              </div>
-            </div>
-
-            <div class="demo-slide" style="min-height: 280px;">
-              <div class="slide-number">03</div>
-              <div class="slide-content">
-                <div class="slide-title">Flexible</div>
-                <div class="slide-description">
-                  Supports any content type - images, text, complex layouts.
-                  Customizable through attributes and CSS variables.
-                </div>
-              </div>
-            </div>
-
-            <div class="demo-slide" style="min-height: 360px;">
-              <div class="slide-number">04</div>
-              <div class="slide-content">
-                <div class="slide-title">Accessible</div>
-                <div class="slide-description">
-                  Keyboard navigation, screen reader support, and touch-friendly interactions.
-                  Built with modern web standards. This slide has more content to demonstrate
-                  the auto-height functionality when enabled.
-                </div>
-              </div>
-            </div>
-
-            <div class="demo-slide" style="min-height: 260px;">
-              <div class="slide-number">05</div>
-              <div class="slide-content">
-                <div class="slide-title">Configurable</div>
-                <div class="slide-description">
-                  Adjust speed, enable looping, auto-height, and more.
-                  Live configuration changes with instant recreation.
-                </div>
-              </div>
-            </div>
-          `;
-        }
-
-        function generateCalendarSlides() {
-          const now = new Date();
-          const slides = [];
-
-          // Generate 5 months: -2, -1, 0, +1, +2 from current month
-          for (let i = -2; i <= 2; i++) {
-            const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
-            slides.push(generateMonthSlide(monthDate, i + 2)); // index 0-4
-          }
-
-          return slides.join('');
-        }
-
-        function generateMonthSlide(monthDate, index) {
-          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
-                             'July', 'August', 'September', 'October', 'November', 'December'];
-          const monthName = monthNames[monthDate.getMonth()];
-          const year = monthDate.getFullYear();
-
-          // Get first day of month and total days
-          const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
-          const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-          const totalDays = lastDay.getDate();
-
-          // Calculate starting day of week (Monday = 0, Sunday = 6)
-          let startDayOfWeek = firstDay.getDay();
-          // Convert to Monday-first (0 = Monday, 6 = Sunday)
-          startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
-
-          const days = [];
-          const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-          // Generate calendar grid
-          let dayCounter = 1;
-          const today = new Date();
-
-          for (let week = 0; week < 6; week++) {
-            for (let day = 0; day < 7; day++) {
-              const cellIndex = week * 7 + day;
-
-              if (cellIndex < startDayOfWeek || dayCounter > totalDays) {
-                days.push('<div class="calendar-day empty"></div>');
-              } else {
-                const currentDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), dayCounter);
-                const isToday = currentDate.toDateString() === today.toDateString();
-                const isWeekend = day >= 5; // Saturday and Sunday
-
-                days.push(`
-                  <div class="calendar-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
-                    <span class="day-number">${dayCounter}</span>
-                  </div>
-                `);
-                dayCounter++;
-              }
-            }
-          }
-
-          return `
-            <div class="calendar-slide" data-month="${monthDate.getTime()}">
-              <div class="calendar-header">
-                <h3 class="month-title">${monthName} ${year}</h3>
-                <div class="day-names">
-                  ${dayNames.map(name => `<div class="day-name">${name}</div>`).join('')}
-                </div>
-              </div>
-              <div class="calendar-grid">
-                ${days.join('')}
-              </div>
-            </div>
-          `;
         }
 
         // Add to DOM
@@ -873,63 +979,19 @@
         // Update reference
         mainSlider = newSlider;
 
-        // Reattach event listeners
-        mainSlider.addEventListener('swipe:change', (e) => {
-          const { index, element } = e.detail;
-          currentSlideSpan.textContent = index + 1;
-
-          if (isCalendarMode) {
-            updateCalendarActiveSlide(index);
-            // Add/remove months dynamically
-            handleCalendarNavigation(element);
-          } else {
-            updateActiveSlide(index);
-          }
-        });
-
-        function handleCalendarNavigation(selectedMonth) {
-          // Check if we need to add previous/next month
-          if (selectedMonth.nextElementSibling && selectedMonth.previousElementSibling) return;
-
-          const monthTimestamp = Number(selectedMonth.getAttribute('data-month'));
-          const method = selectedMonth.nextElementSibling ? 'prependSlide' : 'appendSlide';
-          const newMonthDate = new Date(monthTimestamp);
-
-          if (method === 'appendSlide') {
-            newMonthDate.setMonth(newMonthDate.getMonth() + 1);
-          } else {
-            newMonthDate.setMonth(newMonthDate.getMonth() - 1);
-          }
-
-          const newMonthSlide = generateMonthSlide(newMonthDate, -1); // -1 means dynamic slide
-          const tempDiv = document.createElement('div');
-          tempDiv.innerHTML = newMonthSlide;
-          const slideElement = tempDiv.firstElementChild;
-
-          mainSlider[method](slideElement);
-        }
-
-        // Update totals
-        setTimeout(() => {
-          const totalSlides = mainSlider.getNumSlides();
-          totalSlidesSpan.textContent = totalSlides;
-          const currentPos = mainSlider.getPos();
-          currentSlideSpan.textContent = currentPos + 1;
-
-          if (isCalendarMode) {
-            updateCalendarActiveSlide(currentPos);
-          } else {
-            updateActiveSlide(currentPos);
-          }
-        }, 100);
+        // Update totals and reattach listeners
+        initIndicator();
       }, 300);
     }
 
     // Update active slide visual indicator
-    function updateActiveSlide(index) {
+    function updateActiveSlide(activeElement) {
       const slides = mainSlider.querySelectorAll('.demo-slide');
-      slides.forEach((slide, i) => {
-        slide.classList.toggle('active', i === index);
+      if (typeof activeElement === 'number') {
+        activeElement = Array.from(slides).find(s => parseInt(s.dataset.logicalIndex, 10) === activeElement) || slides[activeElement];
+      }
+      slides.forEach((slide) => {
+        slide.classList.toggle('active', slide === activeElement);
       });
     }
 
@@ -938,9 +1000,6 @@
       // For calendar mode, we don't need special active indicators
       // The calendar just shows different months
     }
-
-    // Initialize active slide
-    updateActiveSlide(0);
 
     // Add some visual effects on load
     setTimeout(() => {
