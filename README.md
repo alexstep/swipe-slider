@@ -49,9 +49,18 @@ Import the class separately to register with your own tag name:
 
 ```javascript
 import SwipeSlider from 'pure-swipe-slider';
+import 'pure-swipe-slider/swipe-slider.css';
 
 // Register with custom tag name
 customElements.define('my-slider', SwipeSlider);
+```
+
+### Manual CSS Import
+
+If you're using a bundler that doesn't handle CSS imports automatically, or if you're importing the class separately, make sure to include the CSS:
+
+```javascript
+import 'pure-swipe-slider/swipe-slider.css';
 ```
 
 Then use it in HTML:
