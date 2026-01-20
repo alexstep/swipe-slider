@@ -4,6 +4,7 @@
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](https://github.com/alexstep/swipe-slider)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](./LICENSE)
 [![NPM Version](https://img.shields.io/npm/v/pure-swipe-slider)](https://www.npmjs.com/package/pure-swipe-slider)
+[![Published on webcomponents.org](https://img.shields.io/badge/webcomponents.org-published-blue.svg)](https://www.webcomponents.org/element/pure-swipe-slider)
 
 [**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
 
