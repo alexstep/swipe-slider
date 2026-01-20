@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Swipe Slider Demo</title>
+
+  <link rel="stylesheet" href="./swipe-slider.css">
+  <!-- Load component as module -->
+  <script type="module">
+    import SwipeSlider from './swipe-slider.js'
+    customElements.define('swipe-slider', SwipeSlider)
+  </script>
+
+
+  <style>
+    :root {
+      --bg-primary: #0a0a0a;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2a2a2a;
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --accent-primary: #00d4ff;
+      --accent-secondary: #8b5cf6;
+      --accent-tertiary: #ec4899;
+      --border-color: #333333;
+      --shadow-color: rgba(0, 212, 255, 0.1);
+      --glass-bg: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'SF Mono', Consolas, monospace;
+      line-height: 1.4;
+      color: var(--text-primary);
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-secondary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--accent-primary);
+      border-radius: 3px;
+    }
+
+
+    /* Main container */
+    .demo-container {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 20px;
+      min-height: calc(100vh - 120px);
+    }
+
+    /* Control panel */
+    .control-panel {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 25px;
+      margin-bottom: 30px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 8px 32px var(--shadow-color);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .control-panel::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary), var(--accent-tertiary));
+    }
+
+    .control-panel h2 {
+      margin: 0 0 20px 0;
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--accent-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .control-panel h2::before {
+      content: '⚙️';
+      font-size: 1.2rem;
+    }
+
+    .control-group {
+      margin-bottom: 20px;
+    }
+
+    .control-group:last-child {
+      margin-bottom: 0;
+    }
+
+    .control-label {
+      display: block;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Toggle switches - using base.css styles */
+    .toggle-container {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    input[type="checkbox"].toggle {
+      appearance: none;
+      cursor: pointer;
+      display: inline-block;
+      background: var(--bg-tertiary);
+      border-radius: 16px;
+      width: 50px;
+      height: 28px;
+      position: relative;
+      vertical-align: middle;
+      transition: background 0.25s;
+      border-top: 1px solid var(--border-color);
+    }
+
+    input[type="checkbox"].toggle:before,
+    input[type="checkbox"].toggle:after {
+      content: "";
+    }
+
+    input[type="checkbox"].toggle:before {
+      display: block;
+      background: #fefefe;
+      filter: saturate(2);
+      box-shadow: 0 2px 0 rgba(0, 0, 0, 0.08);
+      border-radius: 50%;
+      height: calc(100% - 4px);
+      aspect-ratio: 1;
+      position: absolute;
+      top: 1.5px;
+      left: 2px;
+      transition: transform 0.25s;
+    }
+
+    input[type="checkbox"].toggle:checked {
+      background: var(--accent-primary);
+    }
+
+    input[type="checkbox"].toggle:checked:before {
+      transform: translateX(calc(100% - 2px));
+    }
+
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--text-primary);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Slider controls */
+    .slider-controls {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 20px;
+    }
+
+    .control-btn {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      color: var(--text-primary);
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .control-btn:hover {
+      background: var(--accent-primary);
+      color: var(--bg-primary);
+      transform: translateY(-1px);
+    }
+
+    .control-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Slider container */
+    .slider-section {
+      margin-bottom: 30px;
+      position: relative;
+    }
+
+    .slider-section h2 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      margin: 0 0 20px 0;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slider-section h2::before {
+      content: '🎯';
+      font-size: 1.5rem;
+    }
+
+    /* Custom slider styling */
+    swipe-slider {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px var(--shadow-color);
+      border: 1px solid var(--glass-border);
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+    }
+
+    /* Slide styling */
+    .demo-slide {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .demo-slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(139, 92, 246, 0.1));
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .demo-slide.active::before {
+      opacity: 1;
+    }
+
+    .slide-number {
+      font-size: 4rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+      text-shadow: 0 0 30px var(--accent-primary);
+      z-index: 1;
+    }
+
+    .slide-content {
+      text-align: center;
+      z-index: 1;
+      max-width: 100%;
+    }
+
+    .slide-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--accent-primary);
+    }
+
+    .slide-description {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Status indicator */
+    .status-indicator {
+      position: absolute;
+      top: 5px;
+      right: 0px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 12px;
+      padding: 10px 15px;
+      backdrop-filter: blur(20px);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      z-index: 1000;
+    }
+
+    /* Footer */
+    .demo-footer {
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border-color);
+      padding: 20px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .footer-link {
+      color: var(--accent-primary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .footer-link:hover {
+      color: var(--accent-secondary);
+      text-shadow: 0 0 10px var(--accent-primary);
+    }
+
+    .footer-link::before {
+      content: '🐙';
+      font-size: 1rem;
+    }
+
+    /* Calendar styles */
+    .calendar-slide {
+      display: flex;
+      flex-direction: column;
+      min-height: 320px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .calendar-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .month-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: var(--accent-primary);
+      margin: 0 0 15px 0;
+    }
+
+    .day-names {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      margin-bottom: 10px;
+    }
+
+    .day-name {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      flex: 1;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-radius: 8px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .calendar-day:hover {
+      background: var(--accent-primary);
+      color: var(--bg-primary);
+      transform: scale(1.05);
+    }
+
+    .calendar-day.today {
+      background: var(--accent-primary);
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px var(--accent-primary);
+    }
+
+    .calendar-day.weekend {
+      opacity: 0.7;
+    }
+
+    .calendar-day.empty {
+      background: transparent;
+      border: none;
+      cursor: default;
+    }
+
+    .calendar-day.empty:hover {
+      background: transparent;
+      transform: none;
+    }
+
+    .day-number {
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+
+    /* Responsive design */
+    @media (max-width: 480px) {
+      .demo-container {
+        padding: 15px;
+      }
+
+      .control-panel {
+        padding: 20px;
+      }
+
+      .demo-slide, .calendar-slide {
+        padding: 15px;
+      }
+
+      .slide-number {
+        font-size: 3rem;
+      }
+
+      .slide-title {
+        font-size: 1.3rem;
+      }
+
+      .month-title {
+        font-size: 1.3rem;
+      }
+
+      .day-name, .day-number {
+        font-size: 0.8rem;
+      }
+
+      .demo-footer {
+        padding: 15px;
+      }
+    }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in-up {
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.7;
+      }
+    }
+
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+
+    /* Loading state */
+    .loading {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.1), transparent);
+      animation: loading 1.5s infinite;
+    }
+
+    @keyframes loading {
+      0% {
+        left: -100%;
+      }
+      100% {
+        left: 100%;
+      }
+    }
+  </style>
+
+</head>
+<body>
+  <div class="demo-container">
+    <!-- Main Slider -->
+    <div class="slider-section fade-in-up">
+      <h2>Demo Slider</h2>
+
+      <!-- Status Indicator -->
+      <div class="status-indicator" id="status-indicator">
+        Slide: <span id="current-slide">1</span> / <span id="total-slides">5</span>
+      </div>
+
+      <swipe-slider id="main-slider" draggable mousewheel loop auto-height disable-scroll passive-events>
+        <div class="demo-slide" style="min-height: 240px;">
+          <div class="slide-number">01</div>
+          <div class="slide-content">
+            <div class="slide-title">Welcome</div>
+            <div class="slide-description">
+              Experience smooth swipe interactions with our optimized slider component.
+              Touch, drag, or use navigation controls to explore.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 320px;">
+          <div class="slide-number">02</div>
+          <div class="slide-content">
+            <div class="slide-title">Performance</div>
+            <div class="slide-description">
+              GPU-accelerated transforms ensure 60fps animations.
+              Optimized for mobile devices with minimal layout thrashing.
+              All performance optimizations are enabled by default.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 280px;">
+          <div class="slide-number">03</div>
+          <div class="slide-content">
+            <div class="slide-title">Flexible</div>
+            <div class="slide-description">
+              Supports any content type - images, text, complex layouts.
+              Customizable through attributes and CSS variables.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 360px;">
+          <div class="slide-number">04</div>
+          <div class="slide-content">
+            <div class="slide-title">Accessible</div>
+            <div class="slide-description">
+              Keyboard navigation, screen reader support, and touch-friendly interactions.
+              Built with modern web standards. This slide has more content to demonstrate
+              the auto-height functionality when enabled.
+            </div>
+          </div>
+        </div>
+
+        <div class="demo-slide" style="min-height: 260px;">
+          <div class="slide-number">05</div>
+          <div class="slide-content">
+            <div class="slide-title">Configurable</div>
+            <div class="slide-description">
+              Adjust speed, enable looping, auto-height, and more.
+              Live configuration changes with instant recreation.
+            </div>
+          </div>
+        </div>
+      </swipe-slider>
+    </div>
+
+    <!-- Control Panel -->
+    <div class="control-panel fade-in-up">
+      <h2>Configuration</h2>
+
+      <div class="control-group">
+        <label class="control-label">Interaction</label>
+        <div class="toggle-container">
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="draggable-toggle" onchange="toggleOption('draggable')" checked>
+            Draggable
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="mousewheel-toggle" onchange="toggleOption('mousewheel')" checked>
+            Mousewheel
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Behavior</label>
+        <div class="toggle-container">
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="loop-toggle" onchange="toggleOption('loop')" checked>
+            Loop
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="autoheight-toggle" onchange="toggleOption('auto-height')" checked>
+            Auto Height
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Performance</label>
+        <div class="toggle-container">
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="disablescroll-toggle" onchange="toggleOption('disable-scroll')" checked>
+            Disable Scroll
+          </label>
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="passive-toggle" onchange="toggleOption('passive-events')" checked>
+            Passive Events
+          </label>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <label class="control-label">Demo Modes</label>
+        <div class="toggle-container">
+          <label class="toggle-label">
+            <input type="checkbox" class="toggle" id="calendar-toggle" onchange="toggleCalendarMode()">
+            Calendar Mode
+          </label>
+        </div>
+      </div>
+
+      <div class="slider-controls">
+        <button class="control-btn" onclick="mainSlider.prev()">⬅️ Prev</button>
+        <button class="control-btn" onclick="mainSlider.next()">➡️ Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="demo-footer">
+    <a href="https://github.com/alexstep/swipe-slider" target="_blank" class="footer-link">
+      GitHub Repository
+    </a>
+  </footer>
+
+
+  <script>
+    let mainSlider = document.getElementById('main-slider');
+    const currentSlideSpan = document.getElementById('current-slide');
+    const totalSlidesSpan = document.getElementById('total-slides');
+
+    // Configuration state - all enabled by default
+    const config = {
+      draggable: true,
+      mousewheel: true,
+      loop: true,
+      'auto-height': true,
+      'disable-scroll': true,
+      'passive-events': true
+    };
+
+    // Calendar mode state
+    let isCalendarMode = false;
+
+    // Initialize
+    setTimeout(() => {
+      totalSlidesSpan.textContent = mainSlider.getNumSlides();
+      currentSlideSpan.textContent = mainSlider.getPos() + 1;
+      updateActiveSlide(mainSlider.getPos());
+    }, 100);
+
+    // Toggle option function - auto recreates slider
+    function toggleOption(option) {
+      config[option] = !config[option];
+      recreateSlider();
+    }
+
+    // Toggle calendar mode
+    function toggleCalendarMode() {
+      isCalendarMode = !isCalendarMode;
+      recreateSlider();
+    }
+
+    // Recreate slider with new config
+    function recreateSlider() {
+      const sliderContainer = mainSlider.parentElement;
+
+      // Add loading effect
+      mainSlider.classList.add('loading');
+
+      setTimeout(() => {
+        // Remove old slider
+        mainSlider.remove();
+
+        // Create new slider
+        const newSlider = document.createElement('swipe-slider');
+        newSlider.id = 'main-slider';
+
+        // Apply configuration
+        Object.keys(config).forEach(key => {
+          if (config[key]) {
+            newSlider.setAttribute(key, config[key] === true ? '' : config[key]);
+          }
+        });
+
+        // Add slides based on mode
+        if (isCalendarMode) {
+          newSlider.innerHTML = generateCalendarSlides();
+        } else {
+          newSlider.innerHTML = generateDemoSlides();
+        }
+
+        function generateDemoSlides() {
+          return `
+            <div class="demo-slide" style="min-height: 240px;">
+              <div class="slide-number">01</div>
+              <div class="slide-content">
+                <div class="slide-title">Welcome</div>
+                <div class="slide-description">
+                  Experience smooth swipe interactions with our optimized slider component.
+                  Touch, drag, or use navigation controls to explore.
+                </div>
+              </div>
+            </div>
+
+            <div class="demo-slide" style="min-height: 320px;">
+              <div class="slide-number">02</div>
+              <div class="slide-content">
+                <div class="slide-title">Performance</div>
+                <div class="slide-description">
+                  GPU-accelerated transforms ensure 60fps animations.
+                  Optimized for mobile devices with minimal layout thrashing.
+                  All performance optimizations are enabled by default.
+                </div>
+              </div>
+            </div>
+
+            <div class="demo-slide" style="min-height: 280px;">
+              <div class="slide-number">03</div>
+              <div class="slide-content">
+                <div class="slide-title">Flexible</div>
+                <div class="slide-description">
+                  Supports any content type - images, text, complex layouts.
+                  Customizable through attributes and CSS variables.
+                </div>
+              </div>
+            </div>
+
+            <div class="demo-slide" style="min-height: 360px;">
+              <div class="slide-number">04</div>
+              <div class="slide-content">
+                <div class="slide-title">Accessible</div>
+                <div class="slide-description">
+                  Keyboard navigation, screen reader support, and touch-friendly interactions.
+                  Built with modern web standards. This slide has more content to demonstrate
+                  the auto-height functionality when enabled.
+                </div>
+              </div>
+            </div>
+
+            <div class="demo-slide" style="min-height: 260px;">
+              <div class="slide-number">05</div>
+              <div class="slide-content">
+                <div class="slide-title">Configurable</div>
+                <div class="slide-description">
+                  Adjust speed, enable looping, auto-height, and more.
+                  Live configuration changes with instant recreation.
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        function generateCalendarSlides() {
+          const now = new Date();
+          const slides = [];
+
+          // Generate 5 months: -2, -1, 0, +1, +2 from current month
+          for (let i = -2; i <= 2; i++) {
+            const monthDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+            slides.push(generateMonthSlide(monthDate, i + 2)); // index 0-4
+          }
+
+          return slides.join('');
+        }
+
+        function generateMonthSlide(monthDate, index) {
+          const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                             'July', 'August', 'September', 'October', 'November', 'December'];
+          const monthName = monthNames[monthDate.getMonth()];
+          const year = monthDate.getFullYear();
+
+          // Get first day of month and total days
+          const firstDay = new Date(monthDate.getFullYear(), monthDate.getMonth(), 1);
+          const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
+          const totalDays = lastDay.getDate();
+
+          // Calculate starting day of week (Monday = 0, Sunday = 6)
+          let startDayOfWeek = firstDay.getDay();
+          // Convert to Monday-first (0 = Monday, 6 = Sunday)
+          startDayOfWeek = startDayOfWeek === 0 ? 6 : startDayOfWeek - 1;
+
+          const days = [];
+          const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+          // Generate calendar grid
+          let dayCounter = 1;
+          const today = new Date();
+
+          for (let week = 0; week < 6; week++) {
+            for (let day = 0; day < 7; day++) {
+              const cellIndex = week * 7 + day;
+
+              if (cellIndex < startDayOfWeek || dayCounter > totalDays) {
+                days.push('<div class="calendar-day empty"></div>');
+              } else {
+                const currentDate = new Date(monthDate.getFullYear(), monthDate.getMonth(), dayCounter);
+                const isToday = currentDate.toDateString() === today.toDateString();
+                const isWeekend = day >= 5; // Saturday and Sunday
+
+                days.push(`
+                  <div class="calendar-day ${isToday ? 'today' : ''} ${isWeekend ? 'weekend' : ''}">
+                    <span class="day-number">${dayCounter}</span>
+                  </div>
+                `);
+                dayCounter++;
+              }
+            }
+          }
+
+          return `
+            <div class="calendar-slide" data-month="${monthDate.getTime()}">
+              <div class="calendar-header">
+                <h3 class="month-title">${monthName} ${year}</h3>
+                <div class="day-names">
+                  ${dayNames.map(name => `<div class="day-name">${name}</div>`).join('')}
+                </div>
+              </div>
+              <div class="calendar-grid">
+                ${days.join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        // Add to DOM
+        sliderContainer.appendChild(newSlider);
+
+        // Update reference
+        mainSlider = newSlider;
+
+        // Reattach event listeners
+        mainSlider.addEventListener('swipe:change', (e) => {
+          const { index, element } = e.detail;
+          currentSlideSpan.textContent = index + 1;
+
+          if (isCalendarMode) {
+            updateCalendarActiveSlide(index);
+            // Add/remove months dynamically
+            handleCalendarNavigation(element);
+          } else {
+            updateActiveSlide(index);
+          }
+        });
+
+        function handleCalendarNavigation(selectedMonth) {
+          // Check if we need to add previous/next month
+          if (selectedMonth.nextElementSibling && selectedMonth.previousElementSibling) return;
+
+          const monthTimestamp = Number(selectedMonth.getAttribute('data-month'));
+          const method = selectedMonth.nextElementSibling ? 'prependSlide' : 'appendSlide';
+          const newMonthDate = new Date(monthTimestamp);
+
+          if (method === 'appendSlide') {
+            newMonthDate.setMonth(newMonthDate.getMonth() + 1);
+          } else {
+            newMonthDate.setMonth(newMonthDate.getMonth() - 1);
+          }
+
+          const newMonthSlide = generateMonthSlide(newMonthDate, -1); // -1 means dynamic slide
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = newMonthSlide;
+          const slideElement = tempDiv.firstElementChild;
+
+          mainSlider[method](slideElement);
+        }
+
+        // Update totals
+        setTimeout(() => {
+          const totalSlides = mainSlider.getNumSlides();
+          totalSlidesSpan.textContent = totalSlides;
+          const currentPos = mainSlider.getPos();
+          currentSlideSpan.textContent = currentPos + 1;
+
+          if (isCalendarMode) {
+            updateCalendarActiveSlide(currentPos);
+          } else {
+            updateActiveSlide(currentPos);
+          }
+        }, 100);
+      }, 300);
+    }
+
+    // Update active slide visual indicator
+    function updateActiveSlide(index) {
+      const slides = mainSlider.querySelectorAll('.demo-slide');
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === index);
+      });
+    }
+
+    // Update calendar active slide
+    function updateCalendarActiveSlide(index) {
+      // For calendar mode, we don't need special active indicators
+      // The calendar just shows different months
+    }
+
+    // Initialize active slide
+    updateActiveSlide(0);
+
+    // Add some visual effects on load
+    setTimeout(() => {
+      document.body.classList.add('loaded');
+    }, 100);
+  </script>
+
+</body>
+</html>
