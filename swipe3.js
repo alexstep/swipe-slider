@@ -1,5 +1,5 @@
 /**
- * Swipe 3.0 - Optimized for mobile performance
+ * Swipe 3.1 - Optimized for mobile performance
  * Based on https://github.com/thebird/Swipe
  */
 
