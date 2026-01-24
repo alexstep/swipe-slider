@@ -274,9 +274,8 @@ function Swipe(container, options = {}) {
     const slide = slides[idx]
     if (!slide?.style) return
 
-    // slide.style.transitionDuration = speed + 'ms'
-    // slide.style.transitionTimingFunction = EASING
-    slide.style.transition = speed ? `transform ${speed}ms ${EASING}` : 'none'
+    slide.style.transitionDuration = speed + 'ms'
+    slide.style.transitionTimingFunction = EASING
     slide.style.transform = `translate3d(${dist}px, 0, 0)`
   }
 
