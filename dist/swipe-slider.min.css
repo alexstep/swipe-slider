@@ -1,0 +1,1 @@
+swipe-slider{display:block;overflow:hidden;position:relative;will-change:height;width:100%;min-width:0;transition:height .2s linear}swipe-slider .swipe-slider-wrapper{overflow:hidden;position:relative;touch-action:pan-y;height:100%}swipe-slider .swipe-slider-wrapper>*{float:left;position:relative;box-sizing:border-box;will-change:transform;width:100%}

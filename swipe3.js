@@ -5,34 +5,24 @@
 
 const root = typeof self === 'object' && self.self === self ? self : typeof globalThis === 'object' ? globalThis : this
 
-function debounce(fn, delay = 150) {
-  let timeoutId = null
-
-  function debounced(...args) {
-    if (timeoutId) clearTimeout(timeoutId)
-    timeoutId = setTimeout(() => {
-      timeoutId = null
-      fn.apply(this, args)
-    }, delay)
-  }
-
-  debounced.cancel = () => {
-    if (timeoutId) {
-      clearTimeout(timeoutId)
-      timeoutId = null
-    }
-  }
-
-  return debounced
+function debounce(fn, d = 150) {
+  let t
+  const f = (...a) => (clearTimeout(t), t = setTimeout(() => fn.apply(this, a), d))
+  f.cancel = () => clearTimeout(t)
+  return f
 }
 
-function isCancelable(event) {
-  return event && (typeof event.cancelable !== 'boolean' || event.cancelable)
-}
+const isCancelable = e => e?.cancelable !== false
 
 const supports = {
   pointerEvents: 'PointerEvent' in root,
   touch: 'ontouchstart' in root,
+}
+
+const EVENT_TYPES = {
+  pointer: { move: 'pointermove', end: ['pointerup', 'pointercancel', 'pointerleave'] },
+  touch: { move: 'touchmove', end: ['touchend'] },
+  mouse: { move: 'mousemove', end: ['mouseup', 'mouseleave'] },
 }
 
 const EASING = 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
@@ -48,6 +38,7 @@ function Swipe(container, options = {}) {
     disableScroll: false,
     stopPropagation: false,
     ignore: null,
+    paused: false,
     ...options,
   }
 
@@ -69,7 +60,7 @@ function Swipe(container, options = {}) {
   const debouncedSetup = debounce(setup, 150)
   let wheelEndTimeout = null
 
-  const run = (name, ...args) => config[name]?.(...args)
+  const run = (n, a, b, c) => config[n]?.(a, b, c)
 
   // Unified event handlers
   const events = {
@@ -134,6 +125,7 @@ function Swipe(container, options = {}) {
     captured: false,
 
     onStart(event, x, y, pointerId) {
+      if (config.paused) return
       if (event.type === 'pointerdown' && !event.isPrimary) return
       if (config.ignore && event.target.matches(config.ignore)) return
 
@@ -142,19 +134,10 @@ function Swipe(container, options = {}) {
       delta = {}
       this.captured = false
 
-      if (event.type === 'pointerdown') {
-        element.addEventListener('pointermove', this, { passive: false })
-        element.addEventListener('pointerup', this)
-        element.addEventListener('pointercancel', this)
-        element.addEventListener('pointerleave', this)
-      } else if (event.type === 'touchstart') {
-        element.addEventListener('touchmove', this, { passive: false })
-        element.addEventListener('touchend', this)
-      } else {
-        element.addEventListener('mousemove', this)
-        element.addEventListener('mouseup', this)
-        element.addEventListener('mouseleave', this)
-      }
+      const type = event.type === 'pointerdown' ? 'pointer' : event.type === 'touchstart' ? 'touch' : 'mouse'
+      const evts = EVENT_TYPES[type]
+      element.addEventListener(evts.move, this, { passive: false })
+      evts.end.forEach(e => element.addEventListener(e, this))
 
       run('dragStart', index, slides[index])
     },
@@ -177,9 +160,7 @@ function Swipe(container, options = {}) {
         run('runMove')
 
         const resistedDelta = applyResistance(delta.x)
-        translate(index - 1, resistedDelta + slidePos[index - 1], 0)
-        translate(index, resistedDelta + slidePos[index], 0)
-        translate(index + 1, resistedDelta + slidePos[index + 1], 0)
+        translateNeighbors(resistedDelta)
       } else if (config.disableScroll && isCancelable(event)) {
         event.preventDefault()
       }
@@ -193,24 +174,15 @@ function Swipe(container, options = {}) {
         this.captured = false
       }
 
-      if (type === 'pointer') {
-        element.removeEventListener('pointermove', this)
-        element.removeEventListener('pointerup', this)
-        element.removeEventListener('pointercancel', this)
-        element.removeEventListener('pointerleave', this)
-      } else if (type === 'touch') {
-        element.removeEventListener('touchmove', this)
-        element.removeEventListener('touchend', this)
-      } else {
-        element.removeEventListener('mousemove', this)
-        element.removeEventListener('mouseup', this)
-        element.removeEventListener('mouseleave', this)
-      }
+      const evts = EVENT_TYPES[type]
+      element.removeEventListener(evts.move, this)
+      evts.end.forEach(e => element.removeEventListener(e, this))
 
       this.finishSwipe()
     },
 
     onWheel(event) {
+      if (config.paused) return
       let deltaX = event.deltaX
       let deltaY = event.deltaY
       if (event.deltaMode === 1) {
@@ -226,12 +198,12 @@ function Swipe(container, options = {}) {
 
       if (!delta.x) start.time = Date.now()
 
-      let slower = 0.7
       const absDelta = Math.abs(delta.x || 0)
-      if (absDelta > width * 0.5) slower = 0.3
-      if (absDelta > width) slower = 0.1
-      if (absDelta > width * 1.5) slower = 0.05
-      if (absDelta > width * 2) slower = 0.01
+      const slower =
+        absDelta > width * 2   ? 0.01 :
+        absDelta > width * 1.5 ? 0.05 :
+        absDelta > width       ? 0.1  :
+        absDelta > width * 0.5 ? 0.3  : 0.7
 
       delta = {
         x: (delta.x || 0) - deltaX * slower,
@@ -239,9 +211,7 @@ function Swipe(container, options = {}) {
       }
 
       const resistedDelta = applyResistance(delta.x)
-      translate(index - 1, resistedDelta + slidePos[index - 1], 0)
-      translate(index, resistedDelta + slidePos[index], 0)
-      translate(index + 1, resistedDelta + slidePos[index + 1], 0)
+      translateNeighbors(resistedDelta)
 
       if (wheelEndTimeout) clearTimeout(wheelEndTimeout)
       wheelEndTimeout = setTimeout(() => {
@@ -286,14 +256,13 @@ function Swipe(container, options = {}) {
   function applyResistance(deltaX) {
     const atStart = !index && deltaX > 0
     const atEnd = index === slides.length - 1 && deltaX < 0
-    if (atStart || atEnd) {
-      return deltaX / (Math.abs(deltaX) / width + 1)
-    }
-    return deltaX
+    return atStart || atEnd
+      ? deltaX / (Math.abs(deltaX) / width + 1)
+      : deltaX
   }
 
   function circle(idx) {
-    return (slides.length + (idx % slides.length)) % slides.length
+    return (idx + length) % length
   }
 
   function move(idx, dist, speed) {
@@ -305,9 +274,16 @@ function Swipe(container, options = {}) {
     const slide = slides[idx]
     if (!slide?.style) return
 
-    slide.style.transitionDuration = speed + 'ms'
-    slide.style.transitionTimingFunction = EASING
+    // slide.style.transitionDuration = speed + 'ms'
+    // slide.style.transitionTimingFunction = EASING
+    slide.style.transition = speed ? `transform ${speed}ms ${EASING}` : 'none'
     slide.style.transform = `translate3d(${dist}px, 0, 0)`
+  }
+
+  function translateNeighbors(dx) {
+    translate(index - 1, dx + slidePos[index - 1], 0)
+    translate(index, dx + slidePos[index], 0)
+    translate(index + 1, dx + slidePos[index + 1], 0)
   }
 
   function setup(opts) {
@@ -318,7 +294,8 @@ function Swipe(container, options = {}) {
 
     if (!length) return
 
-    width = container.getBoundingClientRect().width || container.offsetWidth
+    // width = container.getBoundingClientRect().width || container.offsetWidth
+    width = container.clientWidth
 
     slidePos = new Array(length)
     element.style.width = length * width * 2 + 'px'
@@ -344,43 +321,25 @@ function Swipe(container, options = {}) {
   }
 
   function attachEvents() {
-    if (supports.pointerEvents) {
-      element.addEventListener('pointerdown', events)
-    } else if (supports.touch) {
-      element.addEventListener('touchstart', events)
-    }
+    const evts = [
+      supports.pointerEvents ? 'pointerdown' : supports.touch ? 'touchstart' : null,
+      config.draggable && !supports.pointerEvents ? 'mousedown' : null,
+      'transitionend',
+    ].filter(Boolean)
 
-    if (config.draggable && !supports.pointerEvents) {
-      element.addEventListener('mousedown', events)
-    }
-
-    if (config.mousewheel) {
-      element.addEventListener('wheel', events, { passive: false })
-    }
-
-    element.addEventListener('transitionend', events)
+    evts.forEach(e => element.addEventListener(e, events))
+    if (config.mousewheel) element.addEventListener('wheel', events, { passive: false })
     root.addEventListener('resize', events)
   }
 
   function detachEvents() {
-    if (supports.pointerEvents) {
-      element.removeEventListener('pointerdown', events)
-      element.removeEventListener('pointermove', events)
-      element.removeEventListener('pointerup', events)
-      element.removeEventListener('pointercancel', events)
-    } else {
-      element.removeEventListener('touchstart', events)
-      element.removeEventListener('touchmove', events)
-      element.removeEventListener('touchend', events)
-    }
+    const t = EVENT_TYPES
+    const evts = supports.pointerEvents
+      ? ['pointerdown', t.pointer.move, ...t.pointer.end]
+      : ['touchstart', t.touch.move, ...t.touch.end]
 
-    element.removeEventListener('mousedown', events)
-    element.removeEventListener('mousemove', events)
-    element.removeEventListener('mouseup', events)
-    element.removeEventListener('mouseleave', events)
-
-    element.removeEventListener('wheel', events)
-    element.removeEventListener('transitionend', events)
+    evts.push('mousedown', t.mouse.move, ...t.mouse.end, 'wheel', 'transitionend')
+    evts.forEach(e => element.removeEventListener(e, events))
     root.removeEventListener('resize', events)
   }
 
@@ -457,18 +416,11 @@ function Swipe(container, options = {}) {
     next,
     getPos,
     getNumSlides: () => length,
-    setIndex: newIndex => {
-      index = newIndex
-    },
-    appendSlide: slide => {
-      element.appendChild(slide)
-      setup()
-    },
-    prependSlide: slide => {
-      element.prepend(slide)
-      index++
-      setup()
-    },
+    setIndex: i => (index = i),
+    appendSlide: s => (element.appendChild(s), setup()),
+    prependSlide: s => (element.prepend(s), index++, setup()),
+    pause: () => (config.paused = true),
+    resume: () => (config.paused = false),
     kill,
   }
 }

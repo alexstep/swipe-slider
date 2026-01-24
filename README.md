@@ -8,7 +8,7 @@
 
 [**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
 
-A tiny, zero-dependency swipe slider as a Web Component (< 4 KB gzipped).
+A tiny, zero-dependency swipe slider as a Web Component (~3.5 KB gzipped).
 Framework-agnostic, mobile-first, event-driven.
 
 Built on top of Swipe.js with modernized internals, Pointer Events, GPU-accelerated transforms, and a clean Custom Events interface.
@@ -341,11 +341,11 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 | Passive event listeners | Non-blocking touch listeners where possible (via `passive-events` attr) |
 | Reduced layout thrashing | Batched DOM reads/writes to minimize reflows |
 | Modern ES6+ syntax | Latest JavaScript features for better performance and maintainability |
-| Size (Gzipped) | < 4 KB for the entire component (JS + CSS) |
 
 ## Size
 
-| Metric | JavaScript | CSS | Total |
-|--------|------------|-----|-------|
-| Minified | 9.8 KB | 0.3 KB | **10.1 KB** |
-| Minified + Gzip | 3.2 KB | 0.2 KB | **3.4 KB** |
+| Metric | Size |
+|--------|------|
+| Minified | 8.75 KB |
+| Minified + Gzip | 3.47 KB |
+| Minified + Brotli | 3.11 KB |

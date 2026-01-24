@@ -13,6 +13,11 @@
     "README.md"
   ],
   "scripts": {
+    "minify": "mkdir -p dist && bun build swipe-slider.js --minify --outfile=dist/swipe-slider.min.js && bun build swipe-slider.css --minify --outfile=dist/swipe-slider.min.css",
+    "gzip": "cd dist && gzip -f -k *.min.*",
+    "brotli": "cd dist && brotli -f -q 11 swipe-slider.min.js swipe-slider.min.css",
+    "compress": "npm run gzip && npm run brotli",
+    "build": "npm run minify && npm run compress",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
