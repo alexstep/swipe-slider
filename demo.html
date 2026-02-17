@@ -393,20 +393,22 @@
       display: grid;
       grid-template-columns: repeat(7, 1fr);
       gap: 5px;
-      flex: 1;
+      align-content: start;
     }
 
     .calendar-day {
-      aspect-ratio: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       position: relative;
       border-radius: 8px;
       background: var(--glass-bg);
       border: 1px solid var(--glass-border);
       transition: all 0.2s ease;
       cursor: pointer;
+    }
+
+    .calendar-day::before {
+      content: '';
+      display: block;
+      padding-bottom: 100%;
     }
 
     .calendar-day:hover:not(.empty) {
@@ -432,6 +434,11 @@
     }
 
     .day-number {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 0.9rem;
       font-weight: 500;
     }
@@ -650,7 +657,9 @@
 
       const temp = document.createElement('div');
       temp.innerHTML = generateMonthSlide(date);
-      mainSlider[method](temp.firstElementChild);
+      const newSlide = temp.firstElementChild;
+      mainSlider[method](newSlide);
+      newSlide.offsetHeight;
     }
 
     // Initialize
@@ -709,8 +718,9 @@
 
       const days = [];
       const today = new Date().toDateString();
+      const cellCount = Math.ceil((startDayOfWeek + totalDays) / 7) * 7;
 
-      for (let i = 0; i < 42; i++) {
+      for (let i = 0; i < cellCount; i++) {
         const dayNum = i - startDayOfWeek + 1;
         if (dayNum < 1 || dayNum > totalDays) {
           days.push('<div class="calendar-day empty"></div>');
@@ -734,7 +744,7 @@
     }
 
     // Toggle option function - auto recreates slider
-    function toggleOption(option) {
+    function _toggleOption(option) {
       config[option] = !config[option];
       recreateSlider();
     }
