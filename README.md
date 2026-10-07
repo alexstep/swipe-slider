@@ -348,6 +348,17 @@ npm test
 
 Open `demo.html` in a browser. The page loads the source modules, so there is no build step. `npm run build` still minifies into `dist/` with bun.
 
+## Release
+
+Publishing uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/) from `.github/workflows/publish.yml`. Push a tag that matches `package.json`:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+The workflow refuses to publish when the tag and `version` differ. It does not use an npm token.
+
 ## When this is not a good fit
 
 - If you need virtualized slides (1000+ items)

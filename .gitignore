@@ -1,4 +1,5 @@
 node_modules/
+*.tgz
 test-results/
 playwright-report/
 blob-report/
