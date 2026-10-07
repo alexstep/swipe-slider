@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>swipe-slider harness</title>
+  <link rel="stylesheet" href="/swipe-slider.css">
+  <style>
+    html, body { margin: 0; }
+    #root { padding: 8px; }
+    swipe-slider { width: 320px; height: 180px; }
+    .slide {
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+  <script type="module">
+    import SwipeSlider from '/swipe-slider.js'
+    if (!customElements.get('swipe-slider')) customElements.define('swipe-slider', SwipeSlider)
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+</body>
+</html>

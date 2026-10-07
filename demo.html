@@ -5,10 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Swipe Slider Demo</title>
 
-  <link rel="stylesheet" href="./dist/swipe-slider.min.css">
-  <!-- Load component as module -->
+  <link rel="stylesheet" href="./swipe-slider.css">
   <script type="module">
-    import SwipeSlider from './dist/swipe-slider.min.js'
+    import SwipeSlider from './swipe-slider.js'
     customElements.define('swipe-slider', SwipeSlider)
   </script>
 
@@ -616,7 +615,7 @@
 
 
   <script>
-    let mainSlider = document.getElementById('main-slider');
+    var mainSlider = document.getElementById('main-slider');
     const currentSlideSpan = document.getElementById('current-slide');
     const totalSlidesSpan = document.getElementById('total-slides');
 
@@ -744,7 +743,7 @@
     }
 
     // Toggle option function - auto recreates slider
-    function _toggleOption(option) {
+    function toggleOption(option) {
       config[option] = !config[option];
       recreateSlider();
     }
@@ -784,11 +783,12 @@
 
         // Apply configuration
         Object.keys(config).forEach(key => {
-          if (config[key]) {
-            // Disable built-in loop in calendar mode to avoid conflicts with dynamic loading
-            if (key === 'loop' && isCalendarMode) return;
-            newSlider.setAttribute(key, config[key] === true ? '' : config[key]);
+          if (key === 'loop' && isCalendarMode) return;
+          if (key === 'mousewheel') {
+            if (!config.mousewheel) newSlider.setAttribute('no-mousewheel', '');
+            return;
           }
+          if (config[key]) newSlider.setAttribute(key, config[key] === true ? '' : config[key]);
         });
 
         // Add slides based on mode
