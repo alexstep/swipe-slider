@@ -1,6 +1,6 @@
 {
   "name": "pure-swipe-slider",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A tiny, zero-dependency swipe slider web component (< 4 KB gzipped).",
   "type": "module",
   "main": "./swipe-slider.js",
@@ -32,6 +32,7 @@
     "swipe-slider.css",
     "register.js",
     "custom-elements.json",
+    "CHANGELOG.md",
     "LICENSE",
     "README.md"
   ],
