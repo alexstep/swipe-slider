@@ -2,13 +2,36 @@
   "name": "pure-swipe-slider",
   "version": "1.0.3",
   "description": "A tiny, zero-dependency swipe slider web component (< 4 KB gzipped).",
-  "main": "swipe-slider.js",
-  "module": "swipe-slider.js",
+  "type": "module",
+  "main": "./swipe-slider.js",
+  "module": "./swipe-slider.js",
+  "types": "./swipe-slider.d.ts",
+  "customElements": "custom-elements.json",
+  "sideEffects": [
+    "register.js",
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./swipe-slider.d.ts",
+      "default": "./swipe-slider.js"
+    },
+    "./register.js": "./register.js",
+    "./swipe-slider.css": "./swipe-slider.css",
+    "./swipe3.js": {
+      "types": "./swipe3.d.ts",
+      "default": "./swipe3.js"
+    },
+    "./custom-elements.json": "./custom-elements.json"
+  },
   "files": [
     "swipe-slider.js",
+    "swipe-slider.d.ts",
     "swipe3.js",
+    "swipe3.d.ts",
     "swipe-slider.css",
     "register.js",
+    "custom-elements.json",
     "LICENSE",
     "README.md"
   ],
@@ -18,7 +41,7 @@
     "brotli": "cd dist && brotli -f -q 11 swipe-slider.min.js swipe-slider.min.css",
     "compress": "npm run gzip && npm run brotli",
     "build": "npm run minify && npm run compress",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "playwright test"
   },
   "repository": {
     "type": "git",
@@ -38,5 +61,8 @@
   "bugs": {
     "url": "https://github.com/alexstep/swipe-slider/issues"
   },
-  "homepage": "https://github.com/alexstep/swipe-slider#readme"
+  "homepage": "https://github.com/alexstep/swipe-slider#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  }
 }

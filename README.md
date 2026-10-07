@@ -145,7 +145,7 @@ All events are dispatched as CustomEvent with `{ bubbles: true, composed: true }
 
 | Event | Detail | Description |
 |-------|--------|-------------|
-| `swipe:change` | `{ index, element, direction }` | Fired when the active slide changes. |
+| `swipe:change` | `{ index, element, direction }` | Fired when the active slide changes. `direction` is `-1` toward the next index and `1` toward the previous index. `index` is the logical slide. |
 | `swipe:transition-end` | `{ index, element }` | Fired when the transition finishes. |
 | `swipe:drag-start` | `{ index, element }` | Fired when dragging starts. |
 | `swipe:drag-end` | `{ index, element }` | Fired when dragging ends. |
@@ -284,7 +284,7 @@ All callbacks receive `(index, element)` parameters where:
 
 | Callback | Parameters | Description |
 |----------|------------|-------------|
-| `callback` | `(index, element, direction)` | Fired when slide changes (direction: -1 for prev, 1 for next) |
+| `callback` | `(index, element, direction)` | Fired when the slide changes. `direction` is `-1` toward the next index and `1` toward the previous index. |
 | `transitionEnd` | `(index, element)` | Fired when transition animation completes |
 | `dragStart` | `(index, element)` | Fired when dragging starts |
 | `dragEnd` | `(index, element)` | Fired when dragging ends |
@@ -306,17 +306,47 @@ All callbacks receive `(index, element)` parameters where:
 
 ## CSS Customization
 
-The component provides a minimal CSS structure with a built-in height transition (0.2s linear) for `auto-height` mode. You can customize the look using standard CSS:
+The component is light DOM: there is no shadow root, so `::part` and `::slotted` are not used. Style the host, the track, and the slides directly.
 
 ```css
 swipe-slider {
   /* container styles */
+  --swipe-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --swipe-height-duration: 0.2s;
 }
 
 .swipe-slider-wrapper > * {
   /* slide styles */
 }
 ```
+
+| Custom property | Default | Description |
+|-----------------|---------|-------------|
+| `--swipe-easing` | `cubic-bezier(0.25, 0.46, 0.45, 0.94)` | Transform timing function. |
+| `--swipe-height-duration` | `0.2s` | Height transition used by `auto-height`. Set to `0s` under `prefers-reduced-motion`. |
+
+## Keyboard and ARIA
+
+On connect the element follows the [carousel pattern](https://www.w3.org/WAI/ARIA/apg/patterns/carousel/) without replacing author-supplied attributes:
+
+- `role="region"`, `aria-roledescription="carousel"`, and an accessible name when missing
+- `tabindex="0"` when missing, so arrow keys have a target
+- each real slide is `role="group"` / `aria-roledescription="slide"` with `aria-label="Slide N of M"`
+- inactive slides are `aria-hidden` and `inert`; loop clones stay hidden
+- a visually hidden live region announces the current slide
+- ArrowRight / ArrowLeft move next / previous (swapped in RTL). Keys are ignored inside inputs, textareas, selects, and `contenteditable`
+
+`prefers-reduced-motion: reduce` sets the slide duration to `0`.
+
+## Development
+
+```bash
+npm install
+npx playwright install --with-deps chromium
+npm test
+```
+
+Open `demo.html` in a browser. The page loads the source modules, so there is no build step. `npm run build` still minifies into `dist/` with bun.
 
 ## When this is not a good fit
 

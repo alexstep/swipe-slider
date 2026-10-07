@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "swipe-slider.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "Touch-first slider as a light-DOM custom element. Register it with register.js as <swipe-slider>, or call customElements.define with another name. There is no shadow root, so ::part is not used.",
+          "name": "SwipeSlider",
+          "customElement": true,
+          "tagName": "swipe-slider",
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "attributes": [
+            {
+              "name": "start-slide",
+              "type": { "text": "number" },
+              "default": "0",
+              "description": "Initial logical slide index."
+            },
+            {
+              "name": "speed",
+              "type": { "text": "number" },
+              "default": "400",
+              "description": "Transition duration in milliseconds. Forced to 0 when prefers-reduced-motion: reduce matches."
+            },
+            {
+              "name": "draggable",
+              "type": { "text": "boolean" },
+              "default": "false",
+              "description": "Allow mouse (and other hover pointers) to drag slides. Touch and pen work without this attribute."
+            },
+            {
+              "name": "no-mousewheel",
+              "type": { "text": "boolean" },
+              "default": "false",
+              "description": "Disable wheel navigation. Wheel navigation is on unless this attribute is present."
+            },
+            {
+              "name": "disable-scroll",
+              "type": { "text": "boolean" },
+              "default": "false",
+              "description": "Block vertical scrolling that starts on the slider. Also sets touch-action: none."
+            },
+            {
+              "name": "stop-propagation",
+              "type": { "text": "boolean" },
+              "default": "false",
+              "description": "Stop propagation of pointer, wheel, and transition events handled by the engine."
+            },
+            {
+              "name": "passive-events",
+              "type": { "text": "boolean" },
+              "default": "false",
+              "description": "Register move and wheel listeners as passive and skip preventDefault."
+            },
+            {
+              "name": "loop",
+              "type": { "text": "boolean" },
+              "default": "false",
+              "description": "Infinite loop, implemented with clones. Requires at least two real slides."
+            },
+            {
+              "name": "auto-height",
+              "type": { "text": "boolean | number" },
+              "default": "false",
+              "description": "Size the host to the active slide. A numeric value is a minimum height in pixels."
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "swipe",
+              "type": { "text": "SwipeControls | null" },
+              "description": "Low-level engine, null until the first animation frame and after kill()."
+            },
+            {
+              "kind": "method",
+              "name": "init",
+              "description": "Rebuild the track from the current children.",
+              "parameters": [
+                {
+                  "name": "options",
+                  "type": { "text": "SwipeSliderInitOptions" },
+                  "optional": true
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "slide",
+              "description": "Move to a logical slide index.",
+              "parameters": [
+                { "name": "to", "type": { "text": "number" } },
+                { "name": "speed", "type": { "text": "number" }, "optional": true }
+              ]
+            },
+            { "kind": "method", "name": "prev", "description": "Go to the previous logical slide. Does not wrap unless loop is set." },
+            { "kind": "method", "name": "next", "description": "Go to the next logical slide. Does not wrap unless loop is set." },
+            { "kind": "method", "name": "getPos", "description": "Logical index of the active slide.", "return": { "type": { "text": "number" } } },
+            { "kind": "method", "name": "getNumSlides", "description": "Count of real slides, excluding loop clones.", "return": { "type": { "text": "number" } } },
+            { "kind": "method", "name": "kill", "description": "Remove listeners, clones, and the engine instance." },
+            {
+              "kind": "method",
+              "name": "setup",
+              "description": "Re-measure and re-apply engine options.",
+              "parameters": [
+                { "name": "options", "type": { "text": "Partial<SwipeOptions>" }, "optional": true }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "appendSlide",
+              "parameters": [{ "name": "slide", "type": { "text": "Element" } }]
+            },
+            {
+              "kind": "method",
+              "name": "prependSlide",
+              "parameters": [{ "name": "slide", "type": { "text": "Element" } }]
+            },
+            {
+              "kind": "method",
+              "name": "adjustHeight",
+              "parameters": [{ "name": "el", "type": { "text": "HTMLElement" }, "optional": true }]
+            }
+          ],
+          "events": [
+            {
+              "name": "swipe:change",
+              "type": { "text": "CustomEvent" },
+              "description": "Active logical slide changed. detail: { index, element, direction }. direction -1 is next, 1 is previous. bubbles and composed."
+            },
+            {
+              "name": "swipe:transition-end",
+              "type": { "text": "CustomEvent" },
+              "description": "Transform transition finished. detail: { index, element }."
+            },
+            {
+              "name": "swipe:drag-start",
+              "type": { "text": "CustomEvent" },
+              "description": "Pointer or wheel gesture started. detail: { index, element }."
+            },
+            {
+              "name": "swipe:drag-end",
+              "type": { "text": "CustomEvent" },
+              "description": "Pointer or wheel gesture finished. detail: { index, element }."
+            },
+            {
+              "name": "swipe:move",
+              "type": { "text": "CustomEvent" },
+              "description": "Fired on each drag frame. detail is empty."
+            }
+          ],
+          "cssProperties": [
+            {
+              "name": "--swipe-easing",
+              "default": "cubic-bezier(0.25, 0.46, 0.45, 0.94)",
+              "description": "Timing function for slide transforms."
+            },
+            {
+              "name": "--swipe-height-duration",
+              "default": "0.2s",
+              "description": "Duration of the auto-height transition. 0s under prefers-reduced-motion."
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "SwipeSlider",
+            "module": "swipe-slider.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "register.js",
+      "description": "Side-effect entry that registers the swipe-slider tag and imports swipe-slider.css for bundlers.",
+      "declarations": [],
+      "exports": []
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+{
+  "name": "swipe-slider",
+  "install": "npm ci && npx playwright install --with-deps chromium"
+}

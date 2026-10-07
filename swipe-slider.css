@@ -4,10 +4,14 @@ swipe-slider {
   min-width: 0;
   overflow: hidden;
   position: relative;
-  transition: height 0.2s linear;
+  --swipe-easing: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --swipe-height-duration: 0.2s;
+  transition: height var(--swipe-height-duration) linear;
   will-change: height;
 
   .swipe-slider-wrapper {
+    /* Physical LTR track. RTL is a mirrored transform, not a reversed float. */
+    direction: ltr;
     overflow: hidden;
     position: relative;
     height: 100%;
@@ -20,5 +24,33 @@ swipe-slider {
       box-sizing: border-box;
       will-change: transform;
     }
+  }
+
+  &:dir(rtl) .swipe-slider-wrapper > * {
+    direction: rtl;
+  }
+
+  &[disable-scroll] .swipe-slider-wrapper {
+    touch-action: none;
+  }
+
+  .swipe-slider-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  swipe-slider {
+    --swipe-height-duration: 0s;
+    transition: none;
   }
 }
