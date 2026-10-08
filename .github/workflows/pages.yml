@@ -21,15 +21,15 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Assemble demo site
         run: |
           mkdir -p _site
           cp demo.html swipe-slider.js swipe-slider.css swipe3.js _site/
           printf '%s\n' '<!DOCTYPE html>' '<meta charset="utf-8">' '<meta http-equiv="refresh" content="0; url=demo.html">' '<title>Swipe Slider</title>' '<p><a href="demo.html">Demo</a></p>' > _site/index.html
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: _site
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
