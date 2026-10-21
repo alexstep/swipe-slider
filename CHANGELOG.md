@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.1.1 — 2026-10-21
+
+### Fixed
+
+- `slide()` no longer wraps around when `loop` is off; out-of-range and non-numeric indexes are clamped or ignored.
+- Rapid `next()` / `prev()` calls in loop mode no longer drop steps.
+- `kill()` cancels a pending transition frame.
+- Loop clones no longer duplicate `id` attributes.
+- Arrow keys are left to buttons, links, form fields, and descendants with their own ARIA role (for example `slider` or `tab`).
+- A click after a swipe is suppressed, and mouse dragging no longer selects text.
+- The mouse wheel respects `ignore`.
+- `will-change` is set on the active slide and its neighbors only during a drag or transition, not permanently.
+- The demo no longer binds `swipe:change` twice.
+
+### Changed
+
+- `@playwright/test` 1.64.1; GitHub Actions pinned to commit SHAs; CI builds `dist/` on every run.
+
 ## 1.1.0 — 2026-10-07
 
 Modernized the slider without renaming attributes, methods, or `swipe:*` events.
