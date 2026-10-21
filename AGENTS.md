@@ -87,7 +87,7 @@ Cloud Agent: `.cursor/environment.json` ставит зависимости и C
 - Реальный слайд: `role="group"`, `aria-roledescription="slide"`, `aria-label="Slide N of M"` (если лейбл не задан автором; свои лейблы помечены `data-swipe-auto-label`).
 - Неактивные слайды: `aria-hidden="true"` и `inert`. Клоны всегда скрыты.
 - Живой регион: `.swipe-slider-live` (`aria-live="polite"`), текст `Slide N of M`.
-- Стрелки: в LTR ArrowRight = next, ArrowLeft = prev; в RTL наоборот. Игнорируются в `input`, `textarea`, `select`, `[contenteditable=true]`, у потомка с ARIA-ролью, которая сама владеет стрелками (`tab`, `tablist`, `radio`, `listbox`, `slider`, `menu`, `grid` и соседние из APG), и если уже был `preventDefault`. На кнопке и ссылке внутри слайда стрелки по-прежнему листают.
+- Стрелки: в LTR ArrowRight = next, ArrowLeft = prev; в RTL наоборот. Не перехватываются у `a`, `button`, `input`, `textarea`, `select`, `summary`, `[contenteditable=true]` и у потомка с ARIA-ролью кроме `group` и `region` (в том числе `slider`). На самом хосте стрелки листают. Игнорируются, если уже был `preventDefault`.
 
 ### CSS
 

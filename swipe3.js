@@ -54,7 +54,7 @@ function Swipe(container, options = {}) {
   let resizeObserver = null
   let tracking = false
   let alive = true
-  let slideFrames = []
+  let slideFrame = 0
   let clickGuard = null
   let clickGuardTimer = null
 
@@ -132,6 +132,7 @@ function Swipe(container, options = {}) {
           if (event.propertyName && event.propertyName !== 'transform') return
           if (event.target?.parentNode !== element) return
           if (parseInt(event.target.getAttribute('data-index'), 10) === index) {
+            markMotion(false)
             run('transitionEnd', index, slides[index])
           }
           break
@@ -155,6 +156,7 @@ function Swipe(container, options = {}) {
       delta = {}
       tracking = true
       armSelectBlock()
+      markMotion(true)
 
       if (event.type === 'pointerdown') {
         element.addEventListener('pointermove', this, moveListenerOptions())
@@ -353,7 +355,16 @@ function Swipe(container, options = {}) {
     move(index + 1, width, config.speed)
   }
 
+  function markMotion(on) {
+    if (!slides) return
+    for (let i = 0; i < slides.length; i++) {
+      const slide = slides[i]
+      if (slide?.style) slide.style.willChange = on && Math.abs(i - index) <= 1 ? 'transform' : ''
+    }
+  }
+
   function settle() {
+    markMotion(false)
     run('transitionEnd', index, slides[index])
   }
 
@@ -471,11 +482,6 @@ function Swipe(container, options = {}) {
     root.removeEventListener('resize', events)
   }
 
-  function cancelSlideFrames() {
-    for (const frame of slideFrames) cancelAnimationFrame(frame)
-    slideFrames = []
-  }
-
   function slideTo(to, slideSpeed) {
     if (!alive) return
     to = typeof to === 'number' ? to : parseInt(to, 10)
@@ -491,14 +497,15 @@ function Swipe(container, options = {}) {
     move(index, width * direction, ms)
     move(to, 0, ms)
     index = to
+    markMotion(true)
 
-    const frame = requestAnimationFrame(() => {
-      slideFrames = slideFrames.filter(id => id !== frame)
+    cancelAnimationFrame(slideFrame)
+    slideFrame = requestAnimationFrame(() => {
+      slideFrame = 0
       if (!alive) return
       run('callback', index, slides[index], direction)
       if (motionMs(ms) === 0) settle()
     })
-    slideFrames.push(frame)
   }
 
   function prev() {
@@ -511,7 +518,9 @@ function Swipe(container, options = {}) {
 
   function kill() {
     alive = false
-    cancelSlideFrames()
+    cancelAnimationFrame(slideFrame)
+    slideFrame = 0
+    markMotion(false)
     disarmClick()
     stopTracking()
     detachEvents()

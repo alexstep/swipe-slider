@@ -4,15 +4,7 @@ const WRAPPER = 'swipe-slider-wrapper'
 const LIVE = 'swipe-slider-live'
 const CLONED = 'data-cloned'
 
-const EDITABLE = 'input, textarea, select, [contenteditable="true"]'
-
-// Roles that own Arrow keys per the APG. The slide's role="group" is intentionally absent.
-const ARROW_ROLES = new Set([
-  'slider', 'listbox', 'option', 'tab', 'tablist', 'radio', 'radiogroup',
-  'menu', 'menubar', 'menuitem', 'menuitemcheckbox', 'menuitemradio',
-  'spinbutton', 'scrollbar', 'textbox', 'searchbox', 'combobox',
-  'tree', 'treeitem', 'grid', 'gridcell', 'toolbar', 'list',
-])
+const KEY_SKIP = 'a,button,input,textarea,select,summary,[contenteditable="true"]'
 
 function stripCloneIds(root) {
   if (root.hasAttribute('id')) root.removeAttribute('id')
@@ -177,18 +169,21 @@ export default class SwipeSlider extends HTMLElement {
     this._live.textContent = `Slide ${index + 1} of ${this._n}`
   }
 
-  _arrowsBelongToDescendant(event) {
+  _skipsArrows(event) {
     const target = event.target
     if (!(target instanceof Element) || target === this) return false
-    if (target.closest(EDITABLE)) return true
-    const owned = target.closest('[role]')
-    if (!owned || owned === this) return false
-    return ARROW_ROLES.has(owned.getAttribute('role'))
+    if (target.closest(KEY_SKIP)) return true
+    // role="group" is the slide itself. Any other role keeps its own arrows.
+    for (let node = target; node && node !== this; node = node.parentElement) {
+      const role = node.getAttribute('role')
+      if (role && role !== 'group' && role !== 'region') return true
+    }
+    return false
   }
 
   _onKeydown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey || event.defaultPrevented) return
-    if (this._arrowsBelongToDescendant(event)) return
+    if (this._skipsArrows(event)) return
     const rtl = getComputedStyle(this).direction === 'rtl'
     const nextKey = rtl ? 'ArrowLeft' : 'ArrowRight'
     const prevKey = rtl ? 'ArrowRight' : 'ArrowLeft'

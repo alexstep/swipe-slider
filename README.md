@@ -1,6 +1,6 @@
 # Pure Swipe Slider Web Component
 
-[![Bundle Size](https://img.shields.io/badge/gzipped_size-5.5_KB-blue)](https://github.com/alexstep/swipe-slider)
+[![Bundle Size](https://img.shields.io/badge/gzipped_size-5.4_KB-blue)](https://github.com/alexstep/swipe-slider)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](https://github.com/alexstep/swipe-slider)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](./LICENSE)
 [![NPM Version](https://img.shields.io/npm/v/pure-swipe-slider)](https://www.npmjs.com/package/pure-swipe-slider)
@@ -8,7 +8,7 @@
 
 [**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
 
-A tiny, zero-dependency swipe slider as a Web Component (~5.5 KB gzipped).
+A tiny, zero-dependency swipe slider as a Web Component (~5.4 KB gzipped).
 Framework-agnostic, mobile-first, event-driven.
 
 Built on top of Swipe.js with modernized internals, Pointer Events, GPU-accelerated transforms, and a clean Custom Events interface.
@@ -334,7 +334,7 @@ On connect the element follows the [carousel pattern](https://www.w3.org/WAI/ARI
 - each real slide is `role="group"` / `aria-roledescription="slide"` with `aria-label="Slide N of M"`
 - inactive slides are `aria-hidden` and `inert`; loop clones stay hidden
 - a visually hidden live region announces the current slide
-- ArrowRight / ArrowLeft move next / previous (swapped in RTL). Keys are ignored inside inputs, textareas, selects, `contenteditable`, and descendants whose ARIA role owns arrow keys (`tab`, `tablist`, `radio`, `listbox`, `slider`, `menu`, `grid`, and the related APG roles). A button or link inside a slide does not take the arrows.
+- ArrowRight / ArrowLeft move next / previous (swapped in RTL) when focus is on the carousel. Keys are left to buttons, links, inputs, textareas, selects, `contenteditable`, and descendants with an ARIA role other than `group` or `region` (`slider`, `tab`, `radio`, `listbox`, and the rest).
 
 `prefers-reduced-motion: reduce` sets the slide duration to `0`.
 
@@ -377,7 +377,7 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 | Optimization | Description |
 |-------------|-------------|
 | GPU-accelerated transforms | `translate3d` for hardware acceleration instead of `translateX` |
-| No permanent `will-change` | Transforms stay on the compositor during the transition without pinning a layer on every idle slide |
+| `will-change` only while moving | The active slide and its neighbors are hinted during a drag or transition, then the hint is cleared |
 | Pointer Events API | Unified touch/mouse/pen input handling with fallbacks |
 | Passive event listeners | Non-blocking touch listeners where possible (via `passive-events` attr) |
 | Reduced layout thrashing | Batched DOM reads/writes to minimize reflows |
@@ -385,10 +385,10 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 
 ## Size
 
-`dist/swipe-slider.min.js`, built with bun 1.4.3. The old 3.47 KB gzip number is that same minifier on the smaller pre-1.1 source. Pinning bun 1.1–1.4, `--minify`, and a second pass with terser all stay above 4 KB on the current source.
+`dist/swipe-slider.min.js`, bun 1.4.3. The old 3.47 KB gzip number is this minifier on the smaller pre-1.1 source (~16.8 KB of sources). The same bun, esbuild, and terser on the current source all stay above 4 KB.
 
 | Metric | Size |
 |--------|------|
-| Minified | 16.23 KB |
-| Minified + Gzip | 5.46 KB |
-| Minified + Brotli | 4.93 KB |
+| Minified | 16.12 KB |
+| Minified + Gzip | 5.39 KB |
+| Minified + Brotli | 4.86 KB |

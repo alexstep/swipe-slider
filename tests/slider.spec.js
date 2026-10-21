@@ -290,16 +290,17 @@ test('does not copy ids onto loop clones', async ({ page }) => {
   expect(ids).toEqual({ cover: 1, title: 1, more: 1, cloned: 0 })
 })
 
-test('leaves arrow keys to a nested widget and still slides from a button', async ({ page }) => {
+test('does not steal arrows from buttons, links, or slider widgets', async ({ page }) => {
   const slider = await mount(page, {
     attrs: 'speed="0"',
-    inner: '<div class="slide"><div role="tablist"><button role="tab" aria-label="One">One</button></div><button type="button">Open</button></div><div class="slide">B</div>',
+    inner: '<div class="slide"><button type="button">Open</button><a href="#next">Next</a><div role="slider" tabindex="0" aria-label="Volume"></div></div><div class="slide">B</div>',
   })
-  await slider.locator('[role="tab"]').focus()
-  await page.keyboard.press('ArrowRight')
-  expect(await slider.evaluate(el => el.getPos())).toBe(0)
-
-  await slider.locator('button[type="button"]').focus()
+  for (const selector of ['button', 'a', '[role="slider"]']) {
+    await slider.locator(selector).focus()
+    await page.keyboard.press('ArrowRight')
+    expect(await slider.evaluate(el => el.getPos())).toBe(0)
+  }
+  await slider.focus()
   await page.keyboard.press('ArrowRight')
   await expect.poll(() => slider.evaluate(el => el.getPos())).toBe(1)
 })
@@ -337,12 +338,17 @@ test('does not select text during a mouse drag', async ({ page }) => {
   const during = await page.evaluate(() => ({
     selected: window.getSelection().toString(),
     userSelect: getComputedStyle(document.querySelector('.swipe-slider-wrapper')).userSelect,
+    willChange: document.querySelector('.slide').style.willChange,
   }))
   await page.mouse.up()
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))))
   const after = await slider.locator('.swipe-slider-wrapper').evaluate(el => getComputedStyle(el).userSelect)
+  const willAfter = await slider.locator('.slide').first().evaluate(el => getComputedStyle(el).willChange)
   expect(during.selected).toBe('')
   expect(during.userSelect).toBe('none')
+  expect(during.willChange).toBe('transform')
   expect(after).toBe('auto')
+  expect(willAfter).toBe('auto')
 })
 
 test('ignores wheel gestures that start on the ignore selector', async ({ page }) => {
