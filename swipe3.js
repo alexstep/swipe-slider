@@ -53,6 +53,10 @@ function Swipe(container, options = {}) {
   let wheelEndTimeout = null
   let resizeObserver = null
   let tracking = false
+  let alive = true
+  let slideFrames = []
+  let clickGuard = null
+  let clickGuardTimer = null
 
   const run = (name, a, b, c) => config[name]?.(a, b, c)
 
@@ -145,10 +149,12 @@ function Swipe(container, options = {}) {
     onStart(event, x, y, pointerId) {
       if (config.paused || tracking || ignored(event)) return
 
+      disarmClick()
       start = { x, y, time: Date.now(), pointerId }
       isScrolling = undefined
       delta = {}
       tracking = true
+      armSelectBlock()
 
       if (event.type === 'pointerdown') {
         element.addEventListener('pointermove', this, moveListenerOptions())
@@ -192,6 +198,7 @@ function Swipe(container, options = {}) {
 
     onEnd(event, cancel) {
       if (!tracking) return
+      const horizontalDrag = !isScrolling && Math.abs(delta.x || 0) > 10
       tracking = false
       stopTracking(event)
 
@@ -202,11 +209,12 @@ function Swipe(container, options = {}) {
       if ((cancel || delta.x) && motionMs(config.speed) === 0 && !isScrolling) {
         settle()
       }
+      if (!cancel && horizontalDrag) armClickSuppression()
       delta = {}
     },
 
     onWheel(event) {
-      if (config.paused || !width) return
+      if (config.paused || !width || ignored(event)) return
       let deltaX = event.deltaX
       let deltaY = event.deltaY
       if (event.deltaMode === 1) {
@@ -253,7 +261,46 @@ function Swipe(container, options = {}) {
     if (event.cancelable) event.preventDefault()
   }
 
+  function disarmClick() {
+    if (clickGuardTimer) {
+      clearTimeout(clickGuardTimer)
+      clickGuardTimer = null
+    }
+    if (!clickGuard) return
+    element.removeEventListener('click', clickGuard, true)
+    clickGuard = null
+  }
+
+  function armClickSuppression() {
+    disarmClick()
+    clickGuard = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      disarmClick()
+    }
+    element.addEventListener('click', clickGuard, true)
+    // Click follows pointerup in the same turn. Drop the guard if the browser never emits one.
+    clickGuardTimer = setTimeout(disarmClick, 400)
+  }
+
+  function blockSelect(event) {
+    event.preventDefault()
+  }
+
+  function armSelectBlock() {
+    element.addEventListener('selectstart', blockSelect)
+    element.addEventListener('dragstart', blockSelect)
+    element.style.userSelect = 'none'
+  }
+
+  function disarmSelectBlock() {
+    element.removeEventListener('selectstart', blockSelect)
+    element.removeEventListener('dragstart', blockSelect)
+    element.style.userSelect = ''
+  }
+
   function stopTracking(event) {
+    disarmSelectBlock()
     if (supportsPointer) {
       element.removeEventListener('pointermove', events)
       element.removeEventListener('pointerup', events)
@@ -374,7 +421,6 @@ function Swipe(container, options = {}) {
 
     for (let i = length - 1; i >= 0; i--) {
       const slide = slides[i]
-      slide.style.willChange = 'transform'
       slide.style.width = width + 'px'
       slide.setAttribute('data-index', String(i))
       slide.style.right = ''
@@ -398,17 +444,21 @@ function Swipe(container, options = {}) {
     }
     element.addEventListener('transitionend', events)
     if (config.mousewheel) element.addEventListener('wheel', events, moveListenerOptions())
-    root.addEventListener('resize', events, { passive: true })
-    if (!resizeObserver && typeof root.ResizeObserver === 'function') {
-      resizeObserver = new root.ResizeObserver(() => {
-        const next = container.clientWidth || container.offsetWidth || 0
-        if (next !== width) debouncedSetup()
-      })
-      resizeObserver.observe(container)
+    if (typeof root.ResizeObserver === 'function') {
+      if (!resizeObserver) {
+        resizeObserver = new root.ResizeObserver(() => {
+          const next = container.clientWidth || container.offsetWidth || 0
+          if (next !== width) debouncedSetup()
+        })
+        resizeObserver.observe(container)
+      }
+    } else {
+      root.addEventListener('resize', events, { passive: true })
     }
   }
 
   function detachEvents() {
+    disarmSelectBlock()
     const names = supportsPointer
       ? ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'lostpointercapture']
       : ['touchstart', 'touchmove', 'touchend', 'touchcancel', 'mousedown', 'mousemove', 'mouseup']
@@ -421,24 +471,34 @@ function Swipe(container, options = {}) {
     root.removeEventListener('resize', events)
   }
 
+  function cancelSlideFrames() {
+    for (const frame of slideFrames) cancelAnimationFrame(frame)
+    slideFrames = []
+  }
+
   function slideTo(to, slideSpeed) {
+    if (!alive) return
     to = typeof to === 'number' ? to : parseInt(to, 10)
-    if (!Number.isFinite(to) || !length || !width || index === to) return
+    if (!Number.isFinite(to) || !length || !width) return
+    to = Math.min(length - 1, Math.max(0, Math.trunc(to)))
+    if (index === to) return
 
     const direction = Math.abs(index - to) / (index - to)
     let diff = Math.abs(index - to) - 1
-    while (diff--) move(circle((to > index ? to : index) - diff - 1), width * direction, 0)
+    while (diff--) move((to > index ? to : index) - diff - 1, width * direction, 0)
 
-    to = circle(to)
     const ms = slideSpeed ?? config.speed
     move(index, width * direction, ms)
     move(to, 0, ms)
     index = to
 
-    requestAnimationFrame(() => {
+    const frame = requestAnimationFrame(() => {
+      slideFrames = slideFrames.filter(id => id !== frame)
+      if (!alive) return
       run('callback', index, slides[index], direction)
       if (motionMs(ms) === 0) settle()
     })
+    slideFrames.push(frame)
   }
 
   function prev() {
@@ -450,6 +510,9 @@ function Swipe(container, options = {}) {
   }
 
   function kill() {
+    alive = false
+    cancelSlideFrames()
+    disarmClick()
     stopTracking()
     detachEvents()
     debouncedSetup.cancel()

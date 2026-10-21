@@ -232,6 +232,150 @@ test('finishes immediately when the user prefers reduced motion', async ({ page 
   expect(['0s', '0ms']).toContain(duration)
 })
 
+test('clamps slide() without loop and wraps logical indexes with loop', async ({ page }) => {
+  const bounded = await mount(page, { attrs: 'speed="0"' })
+  await bounded.evaluate(el => el.slide(99))
+  await expect.poll(() => bounded.evaluate(el => el.getPos())).toBe(2)
+  await expect(bounded.locator('.swipe-slider-live')).toHaveText('Slide 3 of 3')
+  await bounded.evaluate(el => el.slide(-4))
+  await expect.poll(() => bounded.evaluate(el => el.getPos())).toBe(0)
+
+  const looped = await mount(page, { attrs: 'loop speed="0"' })
+  await looped.evaluate(el => el.slide(5))
+  await expect.poll(() => looped.evaluate(el => el.getPos())).toBe(2)
+  await looped.evaluate(el => el.slide(-1))
+  await expect.poll(() => looped.evaluate(el => el.getPos())).toBe(2)
+})
+
+test('does not drop a burst of next and prev while looping', async ({ page }) => {
+  const slider = await mount(page, { attrs: 'loop speed="0"' })
+  const pos = await slider.evaluate(async el => {
+    const frames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    for (let i = 0; i < 5; i++) el.next()
+    await frames()
+    const afterNext = el.getPos()
+    for (let i = 0; i < 5; i++) el.prev()
+    await frames()
+    return { afterNext, afterPrev: el.getPos() }
+  })
+  expect(pos).toEqual({ afterNext: 2, afterPrev: 0 })
+})
+
+test('does not emit a slide that was cancelled by kill', async ({ page }) => {
+  const slider = await mount(page, { attrs: 'speed="0"' })
+  const seen = await slider.evaluate(async el => {
+    const names = []
+    el.addEventListener('swipe:change', () => names.push('change'))
+    el.addEventListener('swipe:transition-end', () => names.push('end'))
+    el.next()
+    el.kill()
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    return names
+  })
+  expect(seen).toEqual([])
+  expect(await slider.evaluate(el => el.swipe)).toBeNull()
+})
+
+test('does not copy ids onto loop clones', async ({ page }) => {
+  await mount(page, {
+    attrs: 'loop',
+    inner: '<div class="slide" id="cover"><h2 id="cover-title">A</h2></div><div class="slide" id="more">B</div>',
+  })
+  const ids = await page.evaluate(() => ({
+    cover: document.querySelectorAll('#cover').length,
+    title: document.querySelectorAll('#cover-title').length,
+    more: document.querySelectorAll('#more').length,
+    cloned: document.querySelectorAll('[data-cloned][id], [data-cloned] [id]').length,
+  }))
+  expect(ids).toEqual({ cover: 1, title: 1, more: 1, cloned: 0 })
+})
+
+test('leaves arrow keys to a nested widget and still slides from a button', async ({ page }) => {
+  const slider = await mount(page, {
+    attrs: 'speed="0"',
+    inner: '<div class="slide"><div role="tablist"><button role="tab" aria-label="One">One</button></div><button type="button">Open</button></div><div class="slide">B</div>',
+  })
+  await slider.locator('[role="tab"]').focus()
+  await page.keyboard.press('ArrowRight')
+  expect(await slider.evaluate(el => el.getPos())).toBe(0)
+
+  await slider.locator('button[type="button"]').focus()
+  await page.keyboard.press('ArrowRight')
+  await expect.poll(() => slider.evaluate(el => el.getPos())).toBe(1)
+})
+
+test('suppresses the click that follows a drag but keeps a tap', async ({ page }) => {
+  const slider = await mount(page, {
+    attrs: 'draggable speed="0"',
+    inner: '<div class="slide"><button type="button">Go</button></div><div class="slide">Next</div>',
+  })
+  await slider.evaluate(el => {
+    el.__clicks = 0
+    el.addEventListener('click', () => { el.__clicks++ })
+  })
+  await slider.locator('button').click()
+  expect(await slider.evaluate(el => el.__clicks)).toBe(1)
+
+  await drag(page, slider, -240)
+  await page.waitForTimeout(50)
+  expect(await slider.evaluate(el => el.__clicks)).toBe(1)
+  expect(await slider.evaluate(el => el.getPos())).toBe(1)
+
+  await slider.locator('.slide').nth(1).click()
+  expect(await slider.evaluate(el => el.__clicks)).toBe(2)
+})
+
+test('does not select text during a mouse drag', async ({ page }) => {
+  const slider = await mount(page, {
+    attrs: 'draggable speed="0"',
+    inner: '<div class="slide"><p>Selectable words in the first slide</p></div><div class="slide">B</div>',
+  })
+  const box = await slider.boundingBox()
+  await page.mouse.move(box.x + 30, box.y + 40)
+  await page.mouse.down()
+  await page.mouse.move(box.x + 220, box.y + 40, { steps: 8 })
+  const during = await page.evaluate(() => ({
+    selected: window.getSelection().toString(),
+    userSelect: getComputedStyle(document.querySelector('.swipe-slider-wrapper')).userSelect,
+  }))
+  await page.mouse.up()
+  const after = await slider.locator('.swipe-slider-wrapper').evaluate(el => getComputedStyle(el).userSelect)
+  expect(during.selected).toBe('')
+  expect(during.userSelect).toBe('none')
+  expect(after).toBe('auto')
+})
+
+test('ignores wheel gestures that start on the ignore selector', async ({ page }) => {
+  const slider = await mount(page, {
+    attrs: 'speed="0"',
+    inner: '<div class="slide"><button type="button">Skip</button></div><div class="slide">B</div><div class="slide">C</div>',
+  })
+  await slider.evaluate(el => el.init({ ignore: 'button', speed: 0 }))
+  await expect(slider).toHaveAttribute('data-ready', 'true')
+
+  await slider.locator('button').hover()
+  await page.mouse.wheel(500, 0)
+  await page.waitForTimeout(120)
+  expect(await slider.evaluate(el => el.getPos())).toBe(0)
+
+  const box = await slider.boundingBox()
+  await page.mouse.move(box.x + 16, box.y + 12)
+  await page.mouse.wheel(500, 0)
+  await expect.poll(() => slider.evaluate(el => el.getPos()), { timeout: 1000 }).toBe(1)
+})
+
+test('does not keep will-change on an idle slider', async ({ page }) => {
+  const slider = await mount(page)
+  expect(await slider.evaluate(el => getComputedStyle(el).willChange)).toBe('auto')
+  expect(await slider.locator('.slide').first().evaluate(el => getComputedStyle(el).willChange)).toBe('auto')
+})
+
+test('follows the host width through ResizeObserver', async ({ page }) => {
+  const slider = await mount(page)
+  await slider.evaluate(el => { el.style.width = '200px' })
+  await expect.poll(() => slider.locator('.slide').first().evaluate(el => el.style.width)).toBe('200px')
+})
+
 test('does not attach the engine after a disconnect', async ({ page }) => {
   await page.goto('/tests/fixtures/harness.html')
   const leaked = await page.evaluate(async () => {
