@@ -661,19 +661,27 @@
       newSlide.offsetHeight;
     }
 
-    // Initialize
+    // Initialize. A new call cancels the previous wait so recreateSlider
+    // cannot attach swipe:change twice.
+    let indicatorGeneration = 0;
     function initIndicator() {
+      const generation = ++indicatorGeneration;
       const indicator = document.getElementById('status-indicator');
       indicator.style.display = isCalendarMode ? 'none' : 'block';
 
-      if (mainSlider.swipe) {
+      const tick = () => {
+        if (generation !== indicatorGeneration) return;
+        if (!mainSlider.swipe) {
+          setTimeout(tick, 50);
+          return;
+        }
         totalSlidesSpan.textContent = mainSlider.getNumSlides();
         currentSlideSpan.textContent = (mainSlider.getPos() || 0) + 1;
         if (!isCalendarMode) updateActiveSlide(mainSlider.getPos());
+        mainSlider.removeEventListener('swipe:change', onSwipeChange);
         mainSlider.addEventListener('swipe:change', onSwipeChange);
-      } else {
-        setTimeout(initIndicator, 50);
-      }
+      };
+      tick();
     }
     initIndicator();
 

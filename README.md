@@ -1,6 +1,6 @@
 # Pure Swipe Slider Web Component
 
-[![Bundle Size](https://img.shields.io/badge/gzipped_size-%3C_4_KB-blue)](https://github.com/alexstep/swipe-slider)
+[![Bundle Size](https://img.shields.io/badge/gzipped_size-5.4_KB-blue)](https://github.com/alexstep/swipe-slider)
 [![Dependencies](https://img.shields.io/badge/dependencies-zero-brightgreen)](https://github.com/alexstep/swipe-slider)
 [![License](https://img.shields.io/badge/license-MIT-yellow)](./LICENSE)
 [![NPM Version](https://img.shields.io/npm/v/pure-swipe-slider)](https://www.npmjs.com/package/pure-swipe-slider)
@@ -8,7 +8,7 @@
 
 [**Live Demo**](https://alexstep.github.io/swipe-slider/demo.html)
 
-A tiny, zero-dependency swipe slider as a Web Component (~3.5 KB gzipped).
+A tiny, zero-dependency swipe slider as a Web Component (~5.4 KB gzipped).
 Framework-agnostic, mobile-first, event-driven.
 
 Built on top of Swipe.js with modernized internals, Pointer Events, GPU-accelerated transforms, and a clean Custom Events interface.
@@ -97,7 +97,7 @@ customElements.define('my-custom-slider', MyCustomSlider);
 ### Basic Example
 
 ```html
-<swipe-slider draggable mousewheel>
+<swipe-slider draggable>
   <div>Slide 1</div>
   <div>Slide 2</div>
   <div>Slide 3</div>
@@ -132,7 +132,7 @@ Boolean attributes follow HTML semantics: presence = `true`, absence = `false`.
 | `start-slide` | Number | `0` | Initial slide index. |
 | `speed` | Number | `400` | Transition speed in milliseconds. |
 | `draggable` | Boolean | `false` | Enable mouse dragging. |
-| `mousewheel` | Boolean | `true` | Enable mouse wheel navigation. Use `no-mousewheel` to disable. |
+| `no-mousewheel` | Boolean | off | Disable mouse wheel navigation. The wheel is enabled until this attribute is set. |
 | `disable-scroll` | Boolean | `false` | Disable vertical scrolling while swiping. |
 | `stop-propagation` | Boolean | `false` | Stop event propagation. |
 | `passive-events` | Boolean | `false` | Use passive event listeners (may improve performance but breaks preventDefault). |
@@ -273,7 +273,7 @@ When using directly, you'll need to add basic CSS:
 | `mousewheel` | Boolean | `true` | Enable mouse wheel navigation |
 | `disableScroll` | Boolean | `false` | Disable vertical scrolling while swiping |
 | `stopPropagation` | Boolean | `false` | Stop event propagation |
-| `ignore` | String | `null` | CSS selector for elements to ignore (e.g., "button, a") |
+| `ignore` | String | `null` | CSS selector. Pointer and wheel gestures that start inside a match are ignored (e.g. `"button, a"`). |
 | `passive` | Boolean | `false` | Use passive event listeners (may improve performance but breaks preventDefault) |
 
 ### Callback Functions
@@ -334,7 +334,7 @@ On connect the element follows the [carousel pattern](https://www.w3.org/WAI/ARI
 - each real slide is `role="group"` / `aria-roledescription="slide"` with `aria-label="Slide N of M"`
 - inactive slides are `aria-hidden` and `inert`; loop clones stay hidden
 - a visually hidden live region announces the current slide
-- ArrowRight / ArrowLeft move next / previous (swapped in RTL). Keys are ignored inside inputs, textareas, selects, and `contenteditable`
+- ArrowRight / ArrowLeft move next / previous (swapped in RTL) when focus is on the carousel. Keys are left to buttons, links, inputs, textareas, selects, `contenteditable`, and descendants with an ARIA role other than `group` or `region` (`slider`, `tab`, `radio`, `listbox`, and the rest).
 
 `prefers-reduced-motion: reduce` sets the slide duration to `0`.
 
@@ -377,7 +377,7 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 | Optimization | Description |
 |-------------|-------------|
 | GPU-accelerated transforms | `translate3d` for hardware acceleration instead of `translateX` |
-| will-change hints | Browser hints to create compositor layers for smoother animations |
+| `will-change` only while moving | The active slide and its neighbors are hinted during a drag or transition, then the hint is cleared |
 | Pointer Events API | Unified touch/mouse/pen input handling with fallbacks |
 | Passive event listeners | Non-blocking touch listeners where possible (via `passive-events` attr) |
 | Reduced layout thrashing | Batched DOM reads/writes to minimize reflows |
@@ -385,8 +385,10 @@ The internal `swipe3.js` engine includes these optimizations for smooth mobile p
 
 ## Size
 
+`dist/swipe-slider.min.js`, bun 1.4.3. The old 3.47 KB gzip number is this minifier on the smaller pre-1.1 source (~16.8 KB of sources). The same bun, esbuild, and terser on the current source all stay above 4 KB.
+
 | Metric | Size |
 |--------|------|
-| Minified | 8.75 KB |
-| Minified + Gzip | 3.47 KB |
-| Minified + Brotli | 3.11 KB |
+| Minified | 16.12 KB |
+| Minified + Gzip | 5.39 KB |
+| Minified + Brotli | 4.86 KB |

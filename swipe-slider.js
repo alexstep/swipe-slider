@@ -4,7 +4,23 @@ const WRAPPER = 'swipe-slider-wrapper'
 const LIVE = 'swipe-slider-live'
 const CLONED = 'data-cloned'
 
-const EDITABLE = 'input, textarea, select, [contenteditable="true"]'
+const KEY_SKIP = 'a,button,input,textarea,select,summary,[contenteditable="true"]'
+
+function stripCloneIds(root) {
+  if (root.hasAttribute('id')) root.removeAttribute('id')
+  root.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'))
+}
+
+function normalizeLogical(to, length, loop) {
+  let value = typeof to === 'number' ? to : parseInt(to, 10)
+  if (!Number.isFinite(value)) return null
+  value = Math.trunc(value)
+  if (!length) return 0
+  if (loop) return ((value % length) + length) % length
+  if (value < 0) return 0
+  if (value > length - 1) return length - 1
+  return value
+}
 
 export default class SwipeSlider extends HTMLElement {
   constructor() {
@@ -111,6 +127,7 @@ export default class SwipeSlider extends HTMLElement {
       clone.setAttribute(CLONED, 'true')
       clone.setAttribute('aria-hidden', 'true')
       clone.inert = true
+      stripCloneIds(clone)
       return clone
     }
     // [clone n-2, clone n-1, ...reals, clone 0, clone 1]
@@ -152,9 +169,21 @@ export default class SwipeSlider extends HTMLElement {
     this._live.textContent = `Slide ${index + 1} of ${this._n}`
   }
 
+  _skipsArrows(event) {
+    const target = event.target
+    if (!(target instanceof Element) || target === this) return false
+    if (target.closest(KEY_SKIP)) return true
+    // role="group" is the slide itself. Any other role keeps its own arrows.
+    for (let node = target; node && node !== this; node = node.parentElement) {
+      const role = node.getAttribute('role')
+      if (role && role !== 'group' && role !== 'region') return true
+    }
+    return false
+  }
+
   _onKeydown(event) {
     if (event.altKey || event.ctrlKey || event.metaKey || event.defaultPrevented) return
-    if (event.target instanceof Element && event.target.closest(EDITABLE)) return
+    if (this._skipsArrows(event)) return
     const rtl = getComputedStyle(this).direction === 'rtl'
     const nextKey = rtl ? 'ArrowLeft' : 'ArrowRight'
     const prevKey = rtl ? 'ArrowRight' : 'ArrowLeft'
@@ -298,15 +327,48 @@ export default class SwipeSlider extends HTMLElement {
   }
 
   slide(to, speed) {
-    return this.swipe?.slide(this._loop && this._n >= 2 ? to + 2 : to, speed)
+    if (!this.swipe || !this._n) return
+    const loop = this._loop && this._n >= 2
+    const logical = normalizeLogical(to, this._n, loop)
+    if (logical === null) return
+    return this.swipe.slide(loop ? logical + 2 : logical, speed)
+  }
+
+  // In a loop the physical track only has two clones past each end. Step one
+  // slot at a time, and when the next step would leave the track, snap back to
+  // the real slide of the same logical index before continuing. That keeps a
+  // burst of next/prev (keyboard repeat) from being dropped.
+  _step(dir) {
+    if (!this.swipe || !this._n) return
+    if (!(this._loop && this._n >= 2)) {
+      return dir < 0 ? this.swipe.prev() : this.swipe.next()
+    }
+
+    const physical = this.swipe.getPos()
+    const target = physical + dir
+    const total = this._n + 4
+    if (target >= 0 && target < total) {
+      this.swipe.slide(target)
+      return
+    }
+
+    const logical = this._logicalIndex(physical)
+    const real = logical + 2
+    if (physical !== real) {
+      this.swipe.setIndex(real)
+      this.swipe.setup()
+      this._decorateSlides()
+    }
+    const nextLogical = (logical + dir + this._n) % this._n
+    this.swipe.slide(nextLogical + 2)
   }
 
   prev() {
-    return this.swipe?.prev()
+    return this._step(-1)
   }
 
   next() {
-    return this.swipe?.next()
+    return this._step(1)
   }
 
   getPos() {
